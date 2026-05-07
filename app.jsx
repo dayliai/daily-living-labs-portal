@@ -491,25 +491,25 @@ const Dashboard = ({ docs, ideas, activity, timeline, onView, onDownload, onOpen
       <div className="col-3">
         <PhaseCard name="Spring 2026" count={phaseCount("Spring 2026")} icon="🌱" modifier="spring"
           chips={[{ label: "Research", color: "green" }, { label: "Design", color: "lavender" }, { label: "Technical", color: "blue" }]}
-          focus="Discovery, research, and early design foundations."
+          focus="Current build maintenance, documentation."
           onClick={() => onNav("docs-spring")} />
       </div>
       <div className="col-3">
         <PhaseCard name="Summer 2026" count={phaseCount("Summer 2026")} icon="☀️" modifier="summer"
           chips={[{ label: "Design", color: "lavender" }, { label: "Research", color: "green" }, { label: "Testing", color: "blue" }]}
-          focus="Prototyping, user testing, and design iteration."
+          focus="Discovery, research, and strategy."
           onClick={() => onNav("docs-summer")} />
       </div>
       <div className="col-3">
         <PhaseCard name="Fall 2026" count={phaseCount("Fall 2026")} icon="🍂" modifier="fall"
           chips={[{ label: "Design", color: "lavender" }, { label: "Technical", color: "blue" }, { label: "Governance", color: "peach" }]}
-          focus="Detailed design, build planning, and governance."
+          focus="Critical build &amp; feature implementation."
           onClick={() => onNav("docs-fall")} />
       </div>
       <div className="col-3">
         <PhaseCard name="Future Work" count={phaseCount("Future Work")} icon="🚀" modifier="future"
           chips={[{ label: "Technical", color: "blue" }, { label: "Governance", color: "peach" }, { label: "Strategy", color: "lavender" }]}
-          focus="Roadmap items, future enhancements, and innovation."
+          focus="Roadmap, Sustainability, and Innovation."
           onClick={() => onNav("docs-future")} />
       </div>
 
@@ -1032,10 +1032,10 @@ const App = () => {
           {view === "dashboard"   && <Dashboard docs={docs} ideas={ideas} activity={activity} timeline={eventsRaw} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} onNav={setView} onToggleReview={onToggleReview} readDocs={readDocs} />}
           {view === "start"       && <StartHerePage docs={docs} onNav={setView} onView={onView} onStartTour={startTour} readDocs={readDocs} />}
           {view === "documents"   && <DocumentsPage docs={docs} search={search} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} />}
-          {view === "docs-spring"  && <DocumentsPage docs={docs} search={search} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} onNav={setView} fixedPhase="Spring 2026"  pageTitle="Spring 2026 Documents"  pageSubtitle="Discovery, research, and early design foundations." />}
-          {view === "docs-summer"  && <DocumentsPage docs={docs} search={search} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} onNav={setView} fixedPhase="Summer 2026"  pageTitle="Summer 2026 Documents"  pageSubtitle="Prototyping, user testing, and design iteration." />}
-          {view === "docs-fall"    && <DocumentsPage docs={docs} search={search} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} onNav={setView} fixedPhase="Fall 2026"    pageTitle="Fall 2026 Documents"    pageSubtitle="Detailed design, build planning, and governance." />}
-          {view === "docs-future" && <DocumentsPage docs={docs} search={search} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} onNav={setView} fixedPhase="Future Work" pageTitle="Future Work Documents" pageSubtitle="Roadmap items, future enhancements, and innovation." deferredItems={deferredItems} onRemoveDeferred={onRemoveDeferred} allDocs={docs} />}
+          {view === "docs-spring"  && <DocumentsPage docs={docs} search={search} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} onNav={setView} fixedPhase="Spring 2026"  pageTitle="Spring 2026 Documents"  pageSubtitle="Current build maintenance, documentation." />}
+          {view === "docs-summer"  && <DocumentsPage docs={docs} search={search} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} onNav={setView} fixedPhase="Summer 2026"  pageTitle="Summer 2026 Documents"  pageSubtitle="Discovery, research, and strategy." />}
+          {view === "docs-fall"    && <DocumentsPage docs={docs} search={search} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} onNav={setView} fixedPhase="Fall 2026"    pageTitle="Fall 2026 Documents"    pageSubtitle="Critical build & feature implementation." />}
+          {view === "docs-future" && <DocumentsPage docs={docs} search={search} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} onNav={setView} fixedPhase="Future Work" pageTitle="Future Work Documents" pageSubtitle="Roadmap, Sustainability, and Innovation." deferredItems={deferredItems} onRemoveDeferred={onRemoveDeferred} allDocs={docs} />}
           {view === "calendar"    && <CalendarPage events={eventsRaw} setEvents={setEvents} onActivity={logActivity} />}
           {view === "signoff"     && <SignOffPage forms={signoffForms} allDocs={docs} onSubmit={onSubmitSignoff} onView={onView} />}
           {view === "ideas"       && <BigIdeasPage ideas={ideas} onAdd={onAddIdea} onDelete={onHideIdea} profile={profile} />}
