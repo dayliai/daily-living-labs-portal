@@ -893,8 +893,15 @@ const App = () => {
 
   React.useEffect(() => {
     if (!currentUser) { setReadDocs(new Set()); return; }
-    try { setReadDocs(new Set(JSON.parse(localStorage.getItem(`dll_read_docs_${currentUser.id}`) || "[]"))); }
-    catch { setReadDocs(new Set()); }
+    const scopedKey = `dll_read_docs_${currentUser.id}`;
+    try {
+      let stored = localStorage.getItem(scopedKey);
+      if (!stored) {
+        const legacy = localStorage.getItem("dll_read_docs");
+        if (legacy) { localStorage.setItem(scopedKey, legacy); stored = legacy; }
+      }
+      setReadDocs(new Set(JSON.parse(stored || "[]")));
+    } catch { setReadDocs(new Set()); }
   }, [currentUser?.id]);
 
   const startTour = () => setShowTour(true);
@@ -961,8 +968,13 @@ const App = () => {
 
       loadedRef.current = true;
       setDbReady(true);
-      if (!localStorage.getItem(`dll_onboarding_seen_${currentUser.id}`)) {
-        setTimeout(() => setShowTour(true), 600);
+      const onboardingKey = `dll_onboarding_seen_${currentUser.id}`;
+      if (!localStorage.getItem(onboardingKey)) {
+        if (localStorage.getItem("dll_onboarding_seen")) {
+          localStorage.setItem(onboardingKey, "1");
+        } else {
+          setTimeout(() => setShowTour(true), 600);
+        }
       }
     };
     load();
