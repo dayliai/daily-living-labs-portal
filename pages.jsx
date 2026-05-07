@@ -220,7 +220,7 @@ const StartHerePage = ({ docs, onView, onNav, onStartTour, readDocs = new Set() 
             <div style={{ width: 56, height: 56, borderRadius: 14, background: "var(--surface-2)", display: "grid", placeItems: "center", fontSize: 26 }}>🏠</div>
             <div>
               <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 17, marginBottom: 4 }}>Explore the Dashboard</div>
-              <div style={{ fontSize: 13, color: "var(--text-3)" }}>Get an at-a-glance view of the entire project.</div>
+              <div style={{ fontSize: 13, color: "var(--text-3)" }}>Get an at-a-glance view of the entire portal.</div>
             </div>
             <Icon name="chevron-right" size={18} />
           </button>
