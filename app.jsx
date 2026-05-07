@@ -609,7 +609,7 @@ const DocViewer = ({ doc, onClose, onDownload, profile, currentUser }) => {
 };
 
 // ============== Dashboard view ==============
-const Dashboard = ({ docs, ideas, activity, timeline, events, signoffForms, submissions, userId, onView, onDownload, onOpenDoc, onNav, onToggleReview, readDocs }) => {
+const Dashboard = ({ docs, ideas, activity, timeline, events, signoffForms, submissions, userId, onView, onDownload, onOpenDoc, onNav, onToggleReview, readDocs, startPins }) => {
   const phaseCount = (p) => docs.filter(d => d.phase === p).length;
 
   const dismissKey = userId ? `dll_dismissed_alerts_${userId}` : "dll_dismissed_alerts";
@@ -670,7 +670,7 @@ const Dashboard = ({ docs, ideas, activity, timeline, events, signoffForms, subm
       ))}
 
       <div className="col-12">
-        <StartHere docs={docs} onView={onView} readDocs={readDocs} userId={userId} />
+        <StartHere docs={docs} onView={onView} readDocs={readDocs} pins={startPins} />
       </div>
 
       <div className="col-3">
@@ -927,6 +927,7 @@ const App = () => {
   const [signoffForms, setSignoffForms] = React.useState([]);
   const [submissions, setSubmissions] = React.useState([]);
   const [deferredItems, setDeferredItems] = React.useState([]);
+  const [startPins, setStartPins] = React.useState({});
 
   // Wrapped setEvents: diffs prev vs next and syncs only changed rows to DB
   const setEvents = React.useCallback((updater) => {
@@ -948,7 +949,7 @@ const App = () => {
     const load = async () => {
       const dbProfile = await window.DLL_DB.getProfile(currentUser.id);
       setProfile(dbProfile || { username: currentUser.email?.split("@")[0] || "User", avatar_emoji: "🦋", role: "Team Member" });
-      const [dbDocs, dbIdeas, dbEvts, dbForms, dbSubs, dbDeferred, dbActivity] = await Promise.all([
+      const [dbDocs, dbIdeas, dbEvts, dbForms, dbSubs, dbDeferred, dbActivity, dbPins] = await Promise.all([
         window.DLL_DB.getAll("documents"),
         window.DLL_DB.getAll("big_ideas"),
         window.DLL_DB.getAll("events"),
@@ -956,6 +957,7 @@ const App = () => {
         window.DLL_DB.getAllDesc("submissions"),
         window.DLL_DB.getAll("deferred_items"),
         window.DLL_DB.getAllDesc("activity"),
+        window.DLL_DB.getStartPins(),
       ]);
 
       setDocs(dbDocs);
@@ -965,6 +967,7 @@ const App = () => {
       setSubmissions(dbSubs);
       setDeferredItems(dbDeferred);
       setActivity(dbActivity);
+      setStartPins(dbPins || {});
 
       loadedRef.current = true;
       setDbReady(true);
@@ -1063,6 +1066,11 @@ const App = () => {
     const next = new Set([...readDocs, doc.id]);
     setReadDocs(next);
     if (currentUser) localStorage.setItem(`dll_read_docs_${currentUser.id}`, JSON.stringify([...next]));
+  };
+
+  const onSavePins = async (pins) => {
+    setStartPins(pins);
+    await window.DLL_DB.saveStartPins(pins);
   };
 
   const onDownload = (doc) => {
@@ -1228,8 +1236,8 @@ const App = () => {
                 profile={profile} email={currentUser?.email}
                 onMenuOpen={() => setSidebarOpen(true)} />
         <div className="page">
-          {view === "dashboard"   && <Dashboard docs={docs} ideas={ideas} activity={activity} timeline={eventsRaw} events={eventsRaw} signoffForms={signoffForms} submissions={submissions} userId={currentUser?.id} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} onNav={setView} onToggleReview={onToggleReview} readDocs={readDocs} />}
-          {view === "start"       && <StartHerePage docs={docs} onNav={setView} onView={onView} onStartTour={startTour} readDocs={readDocs} userId={currentUser?.id} />}
+          {view === "dashboard"   && <Dashboard docs={docs} ideas={ideas} activity={activity} timeline={eventsRaw} events={eventsRaw} signoffForms={signoffForms} submissions={submissions} userId={currentUser?.id} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} onNav={setView} onToggleReview={onToggleReview} readDocs={readDocs} startPins={startPins} />}
+          {view === "start"       && <StartHerePage docs={docs} onNav={setView} onView={onView} onStartTour={startTour} readDocs={readDocs} pins={startPins} onSavePins={onSavePins} />}
           {view === "documents"   && <DocumentsPage docs={docs} search={search} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} />}
           {view === "docs-spring"  && <DocumentsPage docs={docs} search={search} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} onNav={setView} fixedPhase="Spring 2026"  pageTitle="Spring 2026 Documents"  pageSubtitle="Current build maintenance, documentation." />}
           {view === "docs-summer"  && <DocumentsPage docs={docs} search={search} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} onNav={setView} fixedPhase="Summer 2026"  pageTitle="Summer 2026 Documents"  pageSubtitle="Discovery, research, and strategy." />}

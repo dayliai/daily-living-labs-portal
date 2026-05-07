@@ -51,12 +51,7 @@ const StartHerePicker = ({ stepId, docs, pins, onPin, onUnpin, onClose }) => {
   );
 };
 
-const StartHere = ({ docs = [], onView, readDocs = new Set(), userId }) => {
-  const pinsKey = userId ? `dll_start_pins_${userId}` : "dll_start_pins";
-  const [pins] = React.useState(() => {
-    try { return JSON.parse(localStorage.getItem(pinsKey) || "{}"); } catch { return {}; }
-  });
-
+const StartHere = ({ docs = [], onView, readDocs = new Set(), pins = {} }) => {
   const resolveDoc = (step) => {
     const pinnedId = pins[step.id];
     return pinnedId

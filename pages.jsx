@@ -129,24 +129,17 @@ const DocumentsPage = ({ docs, search, onView, onDownload, onOpenDoc, onNav, fix
 };
 
 // ----- Start Here Page -----
-const StartHerePage = ({ docs, onView, onNav, onStartTour, readDocs = new Set(), userId }) => {
+const StartHerePage = ({ docs, onView, onNav, onStartTour, readDocs = new Set(), pins = {}, onSavePins }) => {
   const steps = START_HERE_STEPS;
-  const pinsKey = userId ? `dll_start_pins_${userId}` : "dll_start_pins";
-  const [pins, setPins] = React.useState(() => {
-    try { return JSON.parse(localStorage.getItem(pinsKey) || "{}"); } catch { return {}; }
-  });
   const [pickerStep, setPickerStep] = React.useState(null);
 
   const pin = (stepId, docId) => {
-    const next = { ...pins, [stepId]: docId };
-    setPins(next);
-    localStorage.setItem(pinsKey, JSON.stringify(next));
+    if (onSavePins) onSavePins({ ...pins, [stepId]: docId });
     setPickerStep(null);
   };
   const unpin = (stepId) => {
     const next = { ...pins }; delete next[stepId];
-    setPins(next);
-    localStorage.setItem(pinsKey, JSON.stringify(next));
+    if (onSavePins) onSavePins(next);
   };
   const getDoc = (step) => {
     const pinnedId = pins[step.id];

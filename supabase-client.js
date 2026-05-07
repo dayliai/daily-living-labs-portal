@@ -102,5 +102,14 @@
     if (error) console.error("deleteComment:", error.message);
   };
 
-  window.DLL_DB = { getAll, getAllDesc, upsertOne, upsertMany, deleteOne, uploadFile, deleteFile, signIn, signUp, signOut, getSession, onAuthStateChange, resetPasswordForEmail, updateUserEmail, updateUserPassword, getProfile, upsertProfile, subscribeToTable, unsubscribe, getComments, addComment, deleteComment, submitFeedback };
+  const getStartPins = async () => {
+    const { data } = await client.from("settings").select("data").eq("id", "start-pins").single();
+    return data?.data || {};
+  };
+  const saveStartPins = async (pins) => {
+    const { error } = await client.from("settings").upsert({ id: "start-pins", data: pins });
+    if (error) console.error("saveStartPins:", error.message);
+  };
+
+  window.DLL_DB = { getAll, getAllDesc, upsertOne, upsertMany, deleteOne, uploadFile, deleteFile, signIn, signUp, signOut, getSession, onAuthStateChange, resetPasswordForEmail, updateUserEmail, updateUserPassword, getProfile, upsertProfile, subscribeToTable, unsubscribe, getComments, addComment, deleteComment, submitFeedback, getStartPins, saveStartPins };
 })();
