@@ -8,7 +8,6 @@ const CATEGORIES = ["Project Overview", "Strategy & Planning", "Research & Insig
 const DocumentsPage = ({ docs, search, onView, onDownload, onOpenDoc, onNav, fixedPhase, pageTitle, pageSubtitle, deferredItems = [], onRemoveDeferred, allDocs }) => {
   const [phase, setPhase] = React.useState(fixedPhase || "All");
   const [category, setCategory] = React.useState("All");
-  const [audience, setAudience] = React.useState("All");
   const [status, setStatus] = React.useState("All");
   const [sort, setSort] = React.useState("recent");
   const [viewMode, setViewMode] = React.useState("grid"); // grid | list
@@ -18,7 +17,6 @@ const DocumentsPage = ({ docs, search, onView, onDownload, onOpenDoc, onNav, fix
   const filtered = docs.filter(d => {
     if (phase !== "All" && d.phase !== phase) return false;
     if (category !== "All" && d.category !== category) return false;
-    if (audience !== "All" && !d.audience.includes(audience)) return false;
     if (status !== "All" && d.status !== status) return false;
     if (search && !`${d.title} ${d.description} ${d.tags.join(" ")}`.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
@@ -59,9 +57,6 @@ const DocumentsPage = ({ docs, search, onView, onDownload, onOpenDoc, onNav, fix
         )}
         <select className="filter-select" value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Category">
           <option>All</option>{CATEGORIES.map(c => <option key={c}>{c}</option>)}
-        </select>
-        <select className="filter-select" value={audience} onChange={(e) => setAudience(e.target.value)} aria-label="Audience">
-          <option>All</option><option>Sponsor</option><option>Designer</option><option>Developer</option><option>Academic Supervisor</option>
         </select>
         <select className="filter-select" value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Status">
           <option>All</option><option>Approved</option><option>Current</option><option>For Review</option><option>In Progress</option><option>Archived</option>
@@ -1728,6 +1723,30 @@ const NewSignoffFormModal = ({ onClose, onSave, allDocs = [] }) => {
 
 // ----- Changelog Page -----
 const CHANGELOG_ENTRIES = [
+  {
+    version: "1.3.0", date: "2026-05-07", type: "major", title: "Auth Flows, Alerts & Cross-User Sharing",
+    items: [
+      "Forgot Password: Supabase reset-link email sent directly from sign-in modal",
+      "Forgot Email: admin contact screen for account recovery assistance",
+      "Account settings tab in profile: Update Email, Change Password, Delete Account",
+      "Dashboard event alerts — yellow reminder 2–3 days out, red alert ≤1 day, all dismissible per user",
+      "Dashboard sign-off alert — yellow notice for any sign-off form unsigned after 1 week, dismissible",
+      "Event creation: toggle between single date and date range",
+      "Event creation: toggle between start time only and start + end time",
+      "\"Event\" category added with 🎉 and cyan color",
+      "Full emoji picker for event emoji — 90+ options across 9 thematic groups",
+      "Full emoji picker for profile avatar — 80 options across 4 rows",
+      "Start Here pins now saved to Supabase — shared globally across all users and devices",
+      "\"Coming Soon\" badge on the DLL & Dayli AI Guided Tour tile",
+      "\"Current\" document status option added",
+      "\"Evergreen\" phase added for documents, sign-off forms, and events",
+      "Summer 2026 phase emoji updated from ☀️ to 🌻",
+      "Phase card focus text and chip labels updated for all four phases",
+      "Dashboard responsive fixes: Needs Review badge overflow, KPI text overflow, equal phase card heights",
+      "Bug fix: ghost butterfly emoji no longer appears in Account settings tab",
+      "Bug fix: read state now persists correctly across sign-out and sign-in",
+    ]
+  },
   {
     version: "1.2.0", date: "2026-05-07", type: "major", title: "Realtime, Comments & Mobile",
     items: [

@@ -92,11 +92,11 @@ window.SEED = {
       views: 0, downloads: 0 },
     { id: "d18", title: "Portal Build Summary", description: "Technical and strategic overview of how the Knowledge Portal was designed and built.",
       phase: "Spring 2026", category: "Technical Documentation", status: "Approved", needsReview: false,
-      version: "1.2", updated: "2026-05-07", owner: "Chelsea", tags: ["build", "technical", "architecture"],
+      version: "1.3", updated: "2026-05-07", owner: "Chelsea", tags: ["build", "technical", "architecture"],
       audience: ["Sponsor", "Developer", "Academic Supervisor"], thumb: "arch", googleDocs: false,
       views: 0, downloads: 0,
       content: `<h2>Portal Build Summary</h2>
-<p>A technical and strategic overview of how the Daily Living Labs Knowledge Portal was designed and built for the Spring 2026 capstone project. Current version: 1.2.</p>
+<p>A technical and strategic overview of how the Daily Living Labs Knowledge Portal was designed and built for the Spring 2026 capstone project. Current version: 1.3.</p>
 <h3>Technology Stack</h3>
 <ul>
   <li><strong>React 18</strong> — UI rendering and state management (UMD/CDN, no build step required)</li>
@@ -121,7 +121,14 @@ window.SEED = {
   <li>Dark mode and Butterfly Mode easter egg</li>
   <li>Onboarding tour and profile setup nudge for new users</li>
   <li>Read tracking — Start Here and Dashboard show which docs you have opened</li>
-  <li>Start Here pin system — any document can be pinned to each onboarding step</li>
+  <li>Start Here pins stored in Supabase — shared globally across all users and devices</li>
+  <li>Full authentication flows: sign in, sign up, forgot password (email reset), forgot email (admin contact)</li>
+  <li>Account settings: update email address, change password, delete account</li>
+  <li>Dashboard smart alerts: event reminders (yellow 2–3 days, red ≤1 day) and sign-off pending notices — all dismissible</li>
+  <li>Event date range toggle (single date or date range) and time range toggle (start only or start + end)</li>
+  <li>Full emoji pickers for event emoji and profile avatar (80–90 options)</li>
+  <li>Evergreen phase and Current document status for ongoing/living documents</li>
+  <li>Per-user localStorage scoping — read state, onboarding, and alert dismissals are isolated per account</li>
 </ul>
 <h3>Design System</h3>
 <p>The portal uses a lavender-forward brand palette (<code>--primary: #6B21D9</code>) built entirely with CSS custom properties. The system supports both light and dark mode via a <code>[data-theme="dark"]</code> attribute on the root element. Display headings use Fraunces, body copy uses Inter, and code elements use JetBrains Mono.</p>` },
