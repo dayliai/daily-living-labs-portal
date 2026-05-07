@@ -171,8 +171,8 @@ const ProfileModal = ({ profile, email, onSave, onClose }) => {
               <div className="field">
                 <label>Avatar</label>
                 <div className="emoji-grid emoji-grid--avatar">
-                  {AVATAR_EMOJIS.map(em => (
-                    <button key={em} type="button" className={`emoji-grid__item ${form.avatar_emoji === em ? "is-selected" : ""}`} onClick={() => up({ avatar_emoji: em })}>{em}</button>
+                  {AVATAR_EMOJIS.map((em, idx) => (
+                    <button key={idx} type="button" className={`emoji-grid__item ${form.avatar_emoji === em ? "is-selected" : ""}`} onClick={() => up({ avatar_emoji: em })}>{em}</button>
                   ))}
                 </div>
               </div>
@@ -192,7 +192,6 @@ const ProfileModal = ({ profile, email, onSave, onClose }) => {
 
               <div className="field">
                 <label>Update Email</label>
-                <div style={{ fontSize: 12, color: "var(--text-3)", marginBottom: 6 }}>Current: <strong>{email}</strong></div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <input type="email" value={newEmail} onChange={e => { setNewEmail(e.target.value); setAcctErr(""); }} placeholder="New email address" style={{ flex: 1 }} />
                   <button className="btn btn--primary btn--small" onClick={handleUpdateEmail} disabled={!newEmail.trim() || acctLoading === "email"}>
@@ -257,7 +256,7 @@ const NAV_ITEMS = [
 
 const AVATAR_EMOJIS = [
   "🦋","🌱","🌻","🌸","🌺","🌹","🌷","🍀","🌿","🌊","🌈","🌙","☀️","⭐","🌟","💫","✨","🔥","❄️","⚡",
-  "🐝","🦁","🐯","🦊","🐻","🐼","🦅","🦉","🐬","🦄","🐸","🐨","🦭","🦒","🦋","🐺","🦋","🐙","🦀","🦩",
+  "🐝","🦁","🐯","🦊","🐻","🐼","🦅","🦉","🐬","🦄","🐸","🐨","🦭","🦒","🦋","🐺","🦚","🐙","🦀","🦩",
   "🎯","💡","🚀","🎨","🎵","🏔️","💜","💙","💚","❤️","🧡","💛","🩷","🤍","💎","🔮","🧿","🪬","🎪","🎭",
   "🍁","🌴","🎋","🌵","🍄","🍒","🍓","🍑","🥝","🌰","🪸","🪷","💐","🌾","🪨","🌏","🗺️","🏄","🧘","🌞",
 ];
