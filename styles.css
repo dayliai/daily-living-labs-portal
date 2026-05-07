@@ -232,6 +232,7 @@ select:focus-visible,
   min-width: 20px;
   text-align: center;
 }
+.nav-item__badge--alert { background: #D97706; }
 
 .sidebar__quote {
   margin: 16px 0;

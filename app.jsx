@@ -167,7 +167,7 @@ const UserMenu = ({ open, onClose, onSignOut, onProfileOpen, profile, email, anc
   );
 };
 
-const Sidebar = ({ active, onNav, reviewCount, userMenuOpen, setUserMenuOpen, onSignOut, onProfileOpen, profile, email, open, onClose }) => (
+const Sidebar = ({ active, onNav, reviewCount, pendingSignoffs, userMenuOpen, setUserMenuOpen, onSignOut, onProfileOpen, profile, email, open, onClose }) => (
   <aside className={`sidebar${open ? " sidebar--open" : ""}`} role="navigation" aria-label="Primary">
     <div className="sidebar__brand">
       <div className="sidebar__brand-mark" aria-hidden="true">🦋</div>
@@ -186,6 +186,7 @@ const Sidebar = ({ active, onNav, reviewCount, userMenuOpen, setUserMenuOpen, on
             <Icon name={item.icon} className="nav-item__icon" />
             {item.label}
             {item.id === "documents" && reviewCount > 0 && <span className="nav-item__badge" aria-label={`${reviewCount} need review`}>{reviewCount}</span>}
+            {item.id === "signoff" && pendingSignoffs > 0 && <span className="nav-item__badge nav-item__badge--alert" aria-label="Sign-offs pending">!</span>}
           </button>
         );
       })}
@@ -890,6 +891,7 @@ const App = () => {
   };
 
   const reviewCount = docs.filter(d => d.needsReview).length;
+  const pendingSignoffs = signoffForms.filter(f => !submissions.find(s => s.formId === f.id)).length;
 
   const headers = {
     dashboard:     { title: "Daily Living Labs Knowledge Portal", subtitle: "Centralized documentation, review, and future planning." },
@@ -910,7 +912,7 @@ const App = () => {
   return (
     <div className="app">
       {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
-      <Sidebar active={view} onNav={setView} reviewCount={reviewCount}
+      <Sidebar active={view} onNav={setView} reviewCount={reviewCount} pendingSignoffs={pendingSignoffs}
                userMenuOpen={userMenuOpen} setUserMenuOpen={setUserMenuOpen}
                onSignOut={onSignOut} onProfileOpen={() => setProfileOpen(true)}
                profile={profile} email={currentUser?.email}
