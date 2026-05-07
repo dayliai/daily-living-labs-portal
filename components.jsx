@@ -3,7 +3,7 @@
 const START_HERE_STEPS = [
   { id: "overview", emoji: "📋", label: "Project Overview",             defaultTitle: "Project Overview" },
   { id: "collab",   emoji: "🤝", label: "Collaboration Guide",          defaultTitle: "Collaboration Guide" },
-  { id: "tour",     emoji: "🧭", label: "DLL & Dayli AI Guided Tour",  defaultTitle: "DLL & Dayli AI Guided Tour" },
+  { id: "tour",     emoji: "🧭", label: "DLL & Dayli AI Guided Tour",  defaultTitle: "DLL & Dayli AI Guided Tour", comingSoon: true },
   { id: "future",   emoji: "🔮", label: "Future State Recommendations", defaultTitle: "Future State Recommendations" },
   { id: "roadmap",  emoji: "🗓️", label: "Roadmap 2026",                 defaultTitle: "Roadmap 2026" },
 ];
@@ -85,11 +85,14 @@ const StartHere = ({ docs = [], onView, readDocs = new Set() }) => {
         const doc = resolveDoc(step);
         const isRead = doc && readDocs.has(doc.id);
         return (
-          <button key={step.id} className="start-tile" onClick={() => handleClick(step)} aria-label={`Open ${step.label}`}>
-            {isRead && <span className="start-tile__read" aria-label="Read">✓</span>}
+          <button key={step.id} className={`start-tile${step.comingSoon ? " start-tile--coming-soon" : ""}`} onClick={step.comingSoon ? undefined : () => handleClick(step)} aria-label={`Open ${step.label}`} disabled={step.comingSoon}>
+            {isRead && !step.comingSoon && <span className="start-tile__read" aria-label="Read">✓</span>}
             <div className="start-tile__icon">{step.emoji}</div>
             <span className="start-tile__label">{step.label}</span>
-            <span className="start-tile__chevron"><Icon name="chevron-right" size={14} /></span>
+            {step.comingSoon
+              ? <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.04em", padding: "2px 7px", borderRadius: 999, background: "#FFF3D6", color: "#8A6608", border: "1px solid #F5C842", marginTop: 2 }}>Coming Soon</span>
+              : <span className="start-tile__chevron"><Icon name="chevron-right" size={14} /></span>
+            }
           </button>
         );
       })}

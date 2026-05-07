@@ -219,10 +219,7 @@ const StartHerePage = ({ docs, onView, onNav, onStartTour, readDocs = new Set() 
                   style={{ width: "100%", textAlign: "left", padding: 18, display: "grid", gridTemplateColumns: "56px 1fr auto", gap: 18, alignItems: "center", border: "1px solid var(--border)", cursor: "pointer", font: "inherit", color: "inherit", background: "var(--surface)", borderRadius: "var(--radius)" }}>
             <div style={{ width: 56, height: 56, borderRadius: 14, background: "var(--surface-2)", display: "grid", placeItems: "center", fontSize: 26 }}>🏠</div>
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                <span style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 17 }}>Guided Walkthrough</span>
-                <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.04em", padding: "2px 8px", borderRadius: 999, background: "#FFF3D6", color: "#8A6608", border: "1px solid #F5C842" }}>Coming Soon</span>
-              </div>
+              <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 17, marginBottom: 4 }}>Explore the Dashboard</div>
               <div style={{ fontSize: 13, color: "var(--text-3)" }}>Get an at-a-glance view of the entire project.</div>
             </div>
             <Icon name="chevron-right" size={18} />

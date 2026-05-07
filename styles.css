@@ -602,6 +602,15 @@ select:focus-visible,
   cursor: pointer;
   font: inherit;
 }
+.start-tile--coming-soon {
+  cursor: default;
+  opacity: 0.7;
+}
+.start-tile--coming-soon:hover {
+  border-color: var(--border);
+  box-shadow: none;
+  transform: none;
+}
 
 /* ---- Pin picker dropdown ---- */
 .pin-picker {
