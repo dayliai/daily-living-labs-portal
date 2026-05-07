@@ -493,14 +493,16 @@ select:focus-visible,
   gap: 20px;
   align-items: stretch;
 }
-.col-12 { grid-column: span 12; }
-.col-8 { grid-column: span 8; }
-.col-6 { grid-column: span 6; }
-.col-4 { grid-column: span 4; }
-.col-3 { grid-column: span 3; }
+.col-12 { grid-column: span 12; min-width: 0; }
+.col-8  { grid-column: span 8;  min-width: 0; }
+.col-6  { grid-column: span 6;  min-width: 0; }
+.col-4  { grid-column: span 4;  min-width: 0; }
+.col-3  { grid-column: span 3;  min-width: 0; }
+.dashboard .col-3,
 .dashboard .col-4,
 .dashboard .col-8,
 .dashboard .col-6 { display: flex; flex-direction: column; }
+.dashboard .col-3 > .phase-card,
 .dashboard .col-4 > .card,
 .dashboard .col-8 > .card,
 .dashboard .col-6 > .card { flex: 1; }
@@ -901,15 +903,15 @@ select:focus-visible,
 /* ============== Needs review list ============== */
 .review-row {
   display: grid;
-  grid-template-columns: 56px 1fr auto auto;
-  gap: 12px;
+  grid-template-columns: 40px minmax(0, 1fr) auto auto;
+  gap: 10px;
   align-items: center;
   padding: 10px 0;
   border-bottom: 1px solid var(--border);
 }
 .review-row:last-child { border-bottom: none; }
 .review-row__thumb {
-  width: 56px; height: 44px;
+  width: 40px; height: 36px;
   border-radius: 6px;
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -923,6 +925,9 @@ select:focus-visible,
   font-weight: 600;
   color: var(--text);
   margin: 0 0 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .review-row__meta {
   font-size: 11px;
@@ -1086,11 +1091,16 @@ select:focus-visible,
 
 /* ============== Analytics snapshot ============== */
 .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+@media (max-width: 500px) {
+  .kpi-row { grid-template-columns: 1fr; }
+}
 .kpi {
   padding: 12px;
   border-radius: var(--radius);
   background: var(--surface-2);
   border: 1px solid var(--border);
+  min-width: 0;
+  overflow: hidden;
 }
 .kpi__icon {
   width: 28px; height: 28px;
@@ -1100,12 +1110,12 @@ select:focus-visible,
   display: grid; place-items: center;
   margin-bottom: 8px;
 }
-.kpi__label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; }
-.kpi__value { font-family: var(--font-display); font-size: 24px; font-weight: 700; color: var(--text); margin-top: 2px; }
+.kpi__label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpi__value { font-family: var(--font-display); font-size: clamp(18px, 3vw, 24px); font-weight: 700; color: var(--text); margin-top: 2px; }
 .kpi__delta { font-size: 11px; margin-top: 4px; display: flex; align-items: center; gap: 3px; }
 .kpi__delta--up { color: #1F8A4D; }
 .kpi__delta--down { color: #C0392B; }
-.kpi__sub { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+.kpi__sub { font-size: 11px; color: var(--text-3); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ============== Document cards (featured & library) ============== */
 .docs-row {
