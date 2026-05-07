@@ -555,6 +555,104 @@ const LoadingScreen = () => (
   </div>
 );
 
+// ============== Feedback ==============
+const FEEDBACK_TYPES = [
+  { id: "bug",        label: "🐛 Bug" },
+  { id: "suggestion", label: "💡 Suggestion" },
+  { id: "question",   label: "❓ Question" },
+];
+const PAGE_LABELS = {
+  dashboard: "Dashboard", start: "Start Here", documents: "Documents",
+  "docs-spring": "Spring 2026 Docs", "docs-summer": "Summer 2026 Docs",
+  "docs-fall": "Fall 2026 Docs", "docs-future": "Future Work Docs",
+  calendar: "Calendar & Timeline", signoff: "Sign-Off", ideas: "Big Ideas",
+  analytics: "Analytics", changelog: "Changelog", admin: "Admin",
+};
+
+const FeedbackModal = ({ view, profile, onClose }) => {
+  const [type, setType] = React.useState("bug");
+  const [message, setMessage] = React.useState("");
+  const [submitted, setSubmitted] = React.useState(false);
+  const [submitting, setSubmitting] = React.useState(false);
+
+  const submit = async () => {
+    if (!message.trim()) return;
+    setSubmitting(true);
+    await window.DLL_DB.submitFeedback({
+      id: "fb-" + Date.now(),
+      type, message: message.trim(),
+      page: PAGE_LABELS[view] || view,
+      author: profile?.username || "Anonymous",
+      createdAt: new Date().toISOString()
+    });
+    setSubmitted(true);
+    setSubmitting(false);
+  };
+
+  React.useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal modal--narrow" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Send feedback">
+        <div className="modal__header">
+          <h2>🐛 Send Feedback</h2>
+          <button className="modal__close" onClick={onClose} aria-label="Close"><Icon name="x" size={16} /></button>
+        </div>
+        {submitted ? (
+          <div className="modal__body" style={{ textAlign: "center", padding: "32px 24px" }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>🦋</div>
+            <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Thank you!</div>
+            <div style={{ fontSize: 13, color: "var(--text-2)" }}>Your feedback has been recorded. Chelsea will review it soon.</div>
+            <button className="btn btn--primary" style={{ marginTop: 20 }} onClick={onClose}>Close</button>
+          </div>
+        ) : (
+          <>
+            <div className="modal__body">
+              <div className="field">
+                <label>Type</label>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {FEEDBACK_TYPES.map(t => (
+                    <button key={t.id}
+                      className={`btn ${type === t.id ? "btn--primary" : "btn--ghost"}`}
+                      style={{ flex: 1, fontSize: 12 }}
+                      onClick={() => setType(t.id)}>{t.label}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="field">
+                <label>Page</label>
+                <input value={PAGE_LABELS[view] || view} disabled style={{ opacity: 0.6 }} />
+              </div>
+              <div className="field">
+                <label>Message *</label>
+                <textarea rows={4} placeholder="Describe the issue or share your thought…"
+                  value={message} onChange={e => setMessage(e.target.value)} />
+              </div>
+            </div>
+            <div className="modal__footer">
+              <button className="btn btn--ghost" onClick={onClose}>Cancel</button>
+              <button className="btn btn--primary" disabled={!message.trim() || submitting} onClick={submit}>
+                {submitting ? "Sending…" : "Send feedback"}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const FeedbackButton = ({ onClick }) => (
+  <button className="feedback-fab" onClick={onClick} aria-label="Send feedback or report a bug">
+    <span className="feedback-fab__emoji">🐛</span>
+    <span className="feedback-fab__badge">?</span>
+  </button>
+);
+
 // ============== App root ==============
 const App = () => {
   const [authChecked, setAuthChecked] = React.useState(false);
@@ -566,6 +664,7 @@ const App = () => {
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
   const [topUserMenuOpen, setTopUserMenuOpen] = React.useState(false);
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [feedbackOpen, setFeedbackOpen] = React.useState(false);
 
   React.useEffect(() => {
     window.DLL_DB.getSession().then(({ data: { session } }) => {
@@ -948,6 +1047,8 @@ const App = () => {
       {activeDoc && <DocViewer doc={activeDoc} onClose={() => setActiveDoc(null)} onDownload={onDownload} profile={profile} currentUser={currentUser} />}
       {profileOpen && <ProfileModal profile={profile} email={currentUser?.email} onSave={onSaveProfile} onClose={() => setProfileOpen(false)} />}
       {toast && <Toast msg={toast} onDone={() => setToast("")} />}
+      <FeedbackButton onClick={() => setFeedbackOpen(true)} />
+      {feedbackOpen && <FeedbackModal view={view} profile={profile} onClose={() => setFeedbackOpen(false)} />}
       {showTour && <OnboardingTour onClose={closeTour} />}
       {showProfileNudge && !showTour && (
         <ProfileNudge

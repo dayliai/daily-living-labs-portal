@@ -2342,4 +2342,31 @@ select:focus-visible,
   transition: border-color var(--transition);
 }
 .comment-form__input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(107, 33, 217, 0.12); }
+
+/* ============== Feedback FAB ============== */
+.feedback-fab {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  width: 54px; height: 54px;
+  border-radius: 50%;
+  background: var(--primary);
+  border: none;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow-md);
+  z-index: 90;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+.feedback-fab:hover { transform: scale(1.1); box-shadow: var(--shadow-lg); }
+.feedback-fab__emoji { font-size: 24px; line-height: 1; }
+.feedback-fab__badge {
+  position: absolute; top: -3px; right: -3px;
+  width: 20px; height: 20px;
+  background: #D97706; color: white;
+  border-radius: 50%;
+  font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--bg);
+  font-family: var(--font-sans);
+}
 .mini-bar-val { font-size: 12px; font-weight: 700; color: var(--primary); width: 36px; text-align: right; flex-shrink: 0; }

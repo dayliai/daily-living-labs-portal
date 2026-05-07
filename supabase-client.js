@@ -50,6 +50,11 @@
     if (error) console.error("deleteFile:", error.message);
   };
 
+  const submitFeedback = async (entry) => {
+    const { error } = await client.from("feedback").upsert({ id: entry.id, data: entry });
+    if (error) console.error("submitFeedback:", error.message);
+  };
+
   const signIn = (email, password) => client.auth.signInWithPassword({ email, password });
   const signUp = (email, password) => client.auth.signUp({ email, password });
   const signOut = () => client.auth.signOut();
@@ -94,5 +99,5 @@
     if (error) console.error("deleteComment:", error.message);
   };
 
-  window.DLL_DB = { getAll, getAllDesc, upsertOne, upsertMany, deleteOne, uploadFile, deleteFile, signIn, signUp, signOut, getSession, onAuthStateChange, getProfile, upsertProfile, subscribeToTable, unsubscribe, getComments, addComment, deleteComment };
+  window.DLL_DB = { getAll, getAllDesc, upsertOne, upsertMany, deleteOne, uploadFile, deleteFile, signIn, signUp, signOut, getSession, onAuthStateChange, getProfile, upsertProfile, subscribeToTable, unsubscribe, getComments, addComment, deleteComment, submitFeedback };
 })();
