@@ -745,7 +745,7 @@ const App = () => {
           {view === "docs-future" && <DocumentsPage docs={docs} search={search} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} onNav={setView} fixedPhase="Future Work" pageTitle="Future Work Documents" pageSubtitle="Roadmap items, future enhancements, and innovation." deferredItems={deferredItems} onRemoveDeferred={onRemoveDeferred} allDocs={docs} />}
           {view === "calendar"    && <CalendarPage events={eventsRaw} setEvents={setEvents} onActivity={logActivity} />}
           {view === "signoff"     && <SignOffPage forms={signoffForms} allDocs={docs} onSubmit={onSubmitSignoff} onView={onView} />}
-          {view === "ideas"       && <BigIdeasPage ideas={ideas} onAdd={onAddIdea} profile={profile} />}
+          {view === "ideas"       && <BigIdeasPage ideas={ideas} onAdd={onAddIdea} onDelete={onHideIdea} profile={profile} />}
           {view === "analytics"   && <AnalyticsPage docs={docs} activity={activity} />}
           {view === "admin"       && <AdminPage docs={docs} signoffForms={signoffForms} submissions={submissions} ideas={ideas} onToggleReview={onToggleReview} onArchive={onArchive} onUnarchive={onUnarchive} onDelete={onDelete} onUpload={onUpload} onEditDoc={onEditDoc} onAddSignoffForm={onAddSignoffForm} onDeleteSignoffForm={onDeleteSignoffForm} onHideIdea={onHideIdea} />}
         </div>

@@ -828,7 +828,7 @@ const SignOffForm = ({ form, allDocs = [], onSubmit, onBack, onView }) => {
 };
 
 // ----- Big Ideas Page -----
-const BigIdeasPage = ({ ideas, onAdd, profile }) => {
+const BigIdeasPage = ({ ideas, onAdd, onDelete, profile }) => {
   const [draft, setDraft] = React.useState({ title: "", desc: "", category: "Future Feature", anonymous: true, color: "yellow" });
   const [filter, setFilter] = React.useState("All");
   const cats = ["All", "Future Feature", "Research Opportunity", "Accessibility Improvement", "Partnership Idea",
@@ -858,7 +858,7 @@ const BigIdeasPage = ({ ideas, onAdd, profile }) => {
               <button key={c} className={`btn btn--small ${filter === c ? "btn--primary" : "btn--ghost"}`} onClick={() => setFilter(c)}>{c}</button>
             ))}
           </div>
-          <BigIdeasBoard ideas={filtered} draggable={true} />
+          <BigIdeasBoard ideas={filtered} draggable={true} onDelete={onDelete} />
         </div>
         <form onSubmit={submit} className="sticky-add">
           <h3 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 16 }}>Add an idea</h3>

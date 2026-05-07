@@ -203,15 +203,16 @@ const AnalyticsSnapshot = ({ docs, onViewAll }) => {
 };
 
 // ============== Big Ideas (draggable) ==============
-const BigIdeasBoard = ({ ideas, onAdd, draggable = true, compact = false }) => {
+const BigIdeasBoard = ({ ideas, onAdd, draggable = true, compact = false, onDelete }) => {
   const [items, setItems] = React.useState(ideas);
   const [draggingId, setDraggingId] = React.useState(null);
+  const [overTrash, setOverTrash] = React.useState(false);
   const boardRef = React.useRef(null);
-  const offsetRef = React.useRef({ x: 0, y: 0 });
+  const trashRef = React.useRef(null);
 
   React.useEffect(() => { setItems(ideas); }, [ideas]);
 
-  const dragRef = React.useRef({ id: null, el: null, startX: 0, startY: 0, baseX: 0, baseY: 0, raf: 0, latestX: 0, latestY: 0 });
+  const dragRef = React.useRef({ id: null, el: null, startX: 0, startY: 0, baseX: 0, baseY: 0, raf: 0, latestX: 0, latestY: 0, clientX: 0, clientY: 0 });
 
   const onPointerDown = (e, id) => {
     if (!draggable) return;
@@ -222,10 +223,9 @@ const BigIdeasBoard = ({ ideas, onAdd, draggable = true, compact = false }) => {
     const rect = sticky.getBoundingClientRect();
     const baseX = item && item.free ? (item.x || 0) : (rect.left - board.left);
     const baseY = item && item.free ? (item.y || 0) : (rect.top - board.top);
-    dragRef.current = { id, el: sticky, startX: e.clientX, startY: e.clientY, baseX, baseY, raf: 0, latestX: baseX, latestY: baseY };
+    dragRef.current = { id, el: sticky, startX: e.clientX, startY: e.clientY, baseX, baseY, raf: 0, latestX: baseX, latestY: baseY, clientX: e.clientX, clientY: e.clientY };
     setDraggingId(id);
     if (!item.free) {
-      // promote to free positioning at current rect
       setItems(prev => prev.map(it => it.id === id ? { ...it, x: baseX, y: baseY, free: true } : it));
     }
     sticky.setPointerCapture(e.pointerId);
@@ -237,20 +237,36 @@ const BigIdeasBoard = ({ ideas, onAdd, draggable = true, compact = false }) => {
     if (!id || !el) return;
     el.style.transform = `translate3d(${latestX}px, ${latestY}px, 0) rotate(-1.5deg) scale(1.04)`;
   };
+  const checkOverTrash = (clientX, clientY) => {
+    if (!trashRef.current || !onDelete) return false;
+    const tr = trashRef.current.getBoundingClientRect();
+    return clientX >= tr.left && clientX <= tr.right && clientY >= tr.top && clientY <= tr.bottom;
+  };
   const onPointerMove = (e) => {
     const d = dragRef.current;
     if (!d.id) return;
     d.latestX = d.baseX + (e.clientX - d.startX);
     d.latestY = d.baseY + (e.clientY - d.startY);
+    d.clientX = e.clientX;
+    d.clientY = e.clientY;
     if (!d.raf) d.raf = requestAnimationFrame(flush);
+    setOverTrash(checkOverTrash(e.clientX, e.clientY));
   };
-  const onPointerUp = () => {
+  const onPointerUp = (e) => {
     const d = dragRef.current;
     if (!d.id) return;
     if (d.raf) cancelAnimationFrame(d.raf);
     if (d.el) d.el.style.transform = "";
-    setItems(prev => prev.map(it => it.id === d.id ? { ...it, x: d.latestX, y: d.latestY, free: true } : it));
-    dragRef.current = { id: null, el: null, startX: 0, startY: 0, baseX: 0, baseY: 0, raf: 0, latestX: 0, latestY: 0 };
+    const cx = e ? e.clientX : d.clientX;
+    const cy = e ? e.clientY : d.clientY;
+    if (onDelete && checkOverTrash(cx, cy)) {
+      setItems(prev => prev.filter(it => it.id !== d.id));
+      onDelete(d.id);
+    } else {
+      setItems(prev => prev.map(it => it.id === d.id ? { ...it, x: d.latestX, y: d.latestY, free: true } : it));
+    }
+    setOverTrash(false);
+    dragRef.current = { id: null, el: null, startX: 0, startY: 0, baseX: 0, baseY: 0, raf: 0, latestX: 0, latestY: 0, clientX: 0, clientY: 0 };
     setDraggingId(null);
   };
 
@@ -261,7 +277,12 @@ const BigIdeasBoard = ({ ideas, onAdd, draggable = true, compact = false }) => {
     else if (e.key === "ArrowRight") dx = STEP;
     else if (e.key === "ArrowUp") dy = -STEP;
     else if (e.key === "ArrowDown") dy = STEP;
-    else return;
+    else if ((e.key === "Delete" || e.key === "Backspace") && onDelete) {
+      e.preventDefault();
+      setItems(prev => prev.filter(it => it.id !== id));
+      onDelete(id);
+      return;
+    } else return;
     e.preventDefault();
     setItems(prev => prev.map(it => {
       if (it.id !== id) return it;
@@ -274,7 +295,18 @@ const BigIdeasBoard = ({ ideas, onAdd, draggable = true, compact = false }) => {
   const display = compact ? items.slice(0, 4) : items;
 
   return (
-    <div className="big-ideas-board" ref={boardRef} onPointerMove={onPointerMove} onPointerUp={onPointerUp}>
+    <div className={`big-ideas-board${compact ? " big-ideas-board--compact" : ""}`} ref={boardRef} onPointerMove={onPointerMove} onPointerUp={onPointerUp}>
+      {onDelete && !compact && (
+        <div ref={trashRef} style={{ position: "absolute", top: 12, right: 12, zIndex: 25, pointerEvents: "none",
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+          padding: "10px 14px", borderRadius: 10,
+          border: overTrash ? "2px solid #C0392B" : "2px dashed #bbb",
+          background: overTrash ? "#fff0ee" : "rgba(255,255,255,0.82)",
+          color: overTrash ? "#C0392B" : "#999", fontSize: 11, userSelect: "none" }}>
+          <Icon name="trash" size={20} />
+          <span style={{ fontWeight: 500 }}>{overTrash ? "Release!" : "Delete"}</span>
+        </div>
+      )}
       <div className="big-ideas-grid">
         {display.map(it => (
           <div
