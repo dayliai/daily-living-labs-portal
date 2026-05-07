@@ -591,6 +591,8 @@ select:focus-visible,
 .phase-card--fall .phase-card__icon { background: white; }
 .phase-card--future .phase-card__header { background: linear-gradient(135deg, #F4ECFF 0%, #E8DBFF 100%); }
 .phase-card--future .phase-card__icon { background: white; }
+.phase-card--summer .phase-card__header { background: linear-gradient(135deg, #FFFBE0 0%, #FFF0A0 100%); }
+.phase-card--summer .phase-card__icon { background: white; }
 
 /* Dark mode: keep the same light gradient headers as light mode for visual identity.
    Pin text colors to dark values only inside the header so they stay legible on the light bg. */
@@ -1834,6 +1836,17 @@ select:focus-visible,
   transition: background var(--transition), transform var(--transition);
 }
 .emoji-grid__item:hover { background: var(--surface); transform: scale(1.15); }
+.emoji-grid__item.is-selected { background: var(--primary-light); outline: 2px solid var(--primary); outline-offset: -2px; transform: scale(1.1); }
+.emoji-grid--avatar { grid-template-columns: repeat(6, 1fr); }
+
+.auth-tabs { display: flex; gap: 4px; background: var(--surface-2); border-radius: 8px; padding: 4px; margin-bottom: 20px; }
+.auth-tabs button { flex: 1; padding: 8px; border: none; border-radius: 6px; background: transparent; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text-2); transition: background var(--transition), color var(--transition); }
+.auth-tabs button.is-active { background: var(--surface); color: var(--text-1); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+
+.profile-avatar-preview { font-size: 56px; text-align: center; padding: 12px 0 4px; line-height: 1; }
+.lock__card .field { margin-bottom: 12px; text-align: left; }
+.lock__card .field label { display: block; font-size: 12px; font-weight: 500; color: var(--text-2); margin-bottom: 4px; text-align: left; }
+.lock__msg { font-size: 13px; color: var(--text-3); margin-top: 12px; text-align: center; }
 
 .cat-trigger {
   display: flex; align-items: center; gap: 8px;

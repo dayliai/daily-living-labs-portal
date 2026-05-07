@@ -48,7 +48,7 @@ const PhaseCard = ({ name, count, focus, chips, modifier, icon, onClick }) => (
 );
 
 const NeedsReview = ({ docs, onView, onFlag, onViewAll }) => {
-  const flagged = docs.filter(d => d.needsReview).slice(0, 3);
+  const flagged = docs.filter(d => d.needsReview || d.status === "For Review").slice(0, 3);
   return (
     <section className="card" aria-labelledby="needs-review-heading">
       <div className="card__header">
@@ -76,52 +76,97 @@ const NeedsReview = ({ docs, onView, onFlag, onViewAll }) => {
   );
 };
 
-const RecentActivity = ({ items }) => (
+const ACTIVITY_META = {
+  view:         { icon: "eye",          label: "Viewed" },
+  download:     { icon: "download",     label: "Downloaded" },
+  upload:       { icon: "plus",         label: "Added" },
+  edit:         { icon: "edit",         label: "Edited" },
+  archive:      { icon: "archive",      label: "Archived" },
+  delete:       { icon: "trash",        label: "Deleted" },
+  signoff:      { icon: "check-circle", label: "Sign-off submitted" },
+  "event-add":  { icon: "calendar",     label: "Event created" },
+  "event-edit": { icon: "calendar",     label: "Event updated" },
+  "event-del":  { icon: "calendar",     label: "Event deleted" },
+};
+
+const fmtRelTime = (iso) => {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+};
+
+const RecentActivity = ({ items, onViewAll }) => (
   <section className="card" aria-labelledby="recent-activity-heading">
     <div className="card__header">
       <h3 className="card__title" id="recent-activity-heading">Recent Activity</h3>
-      <a className="card__link" href="#">View all</a>
+      <a className="card__link" href="#" onClick={(e) => { e.preventDefault(); onViewAll && onViewAll(); }}>View all</a>
     </div>
-    {items.map(a => (
-      <div className="activity-row" key={a.id}>
-        <div className={`activity-row__icon activity-row__icon--${a.type}`}>
-          <Icon name={a.type === "view" ? "eye" : a.type === "edit" ? "edit" : a.type === "download" ? "download" : "flag"} size={14} />
-        </div>
-        <div>
-          <div className="activity-row__title">{a.title}</div>
-          <div className="activity-row__sub">
-            {a.type === "view" ? "Viewed by" : a.type === "edit" ? "Edited by" : a.type === "download" ? "Downloaded by" : "Flagged by"} {a.who}
-          </div>
-        </div>
-        <div className="activity-row__time">{a.when}</div>
+    {(!items || items.length === 0) ? (
+      <div className="empty" style={{ padding: "12px 0" }}>
+        <div className="empty__emoji">🕐</div>
+        <div className="empty__msg">No activity recorded yet.</div>
       </div>
-    ))}
+    ) : items.slice(0, 6).map(a => {
+      const meta = ACTIVITY_META[a.type] || { icon: "flag", label: "Action" };
+      const when = a.when && a.when.includes("T") ? fmtRelTime(a.when) : (a.when || "");
+      return (
+        <div className="activity-row" key={a.id}>
+          <div className={`activity-row__icon activity-row__icon--${a.type}`}>
+            <Icon name={meta.icon} size={14} />
+          </div>
+          <div>
+            <div className="activity-row__title">{a.title}</div>
+            <div className="activity-row__sub">{meta.label} by {a.who}</div>
+          </div>
+          <div className="activity-row__time">{when}</div>
+        </div>
+      );
+    })}
   </section>
 );
 
-const TimelineWidget = ({ items, onViewAll }) => (
-  <section className="card" aria-labelledby="timeline-heading">
-    <div className="card__header">
-      <h3 className="card__title" id="timeline-heading">Calendar & Timeline</h3>
-      <a className="card__link" href="#" onClick={(e) => { e.preventDefault(); onViewAll(); }}>View full calendar</a>
-    </div>
-    <div className="timeline-list">
-      {items.slice(0, 4).map((t, i) => {
-        const d = new Date(t.date + "T00:00");
-        const month = d.toLocaleString("en", { month: "short" }).toUpperCase();
-        const day = String(d.getDate()).padStart(2, "0");
-        return (
-          <div className="timeline-row" key={t.id}>
-            <div className="timeline-row__date">{month}<strong>{day}</strong></div>
-            <div className={`timeline-dot ${i === 0 ? "timeline-dot--filled" : ""}`}></div>
-            <div className="timeline-row__title">{t.title}</div>
-            <span className={`badge ${t.status === "Milestone" ? "badge--milestone" : "badge--upcoming"}`}>{t.status}</span>
+const TimelineWidget = ({ items, onViewAll }) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const upcoming = [...items]
+    .filter(t => t.date)
+    .sort((a, b) => new Date(a.date + "T00:00") - new Date(b.date + "T00:00"))
+    .filter(t => new Date(t.date + "T00:00") >= today)
+    .slice(0, 4);
+  return (
+    <section className="card" aria-labelledby="timeline-heading">
+      <div className="card__header">
+        <h3 className="card__title" id="timeline-heading">Calendar & Timeline</h3>
+        <a className="card__link" href="#" onClick={(e) => { e.preventDefault(); onViewAll(); }}>View full calendar</a>
+      </div>
+      <div className="timeline-list">
+        {upcoming.length === 0 ? (
+          <div className="empty" style={{ padding: "12px 0" }}>
+            <div className="empty__emoji">📅</div>
+            <div className="empty__msg">No upcoming events. Add one in Calendar & Timeline.</div>
           </div>
-        );
-      })}
-    </div>
-  </section>
-);
+        ) : upcoming.map((t, i) => {
+          const d = new Date(t.date + "T00:00");
+          const month = d.toLocaleString("en", { month: "short" }).toUpperCase();
+          const day = String(d.getDate()).padStart(2, "0");
+          const isMilestone = t.category === "Milestone";
+          return (
+            <div className="timeline-row" key={t.id}>
+              <div className="timeline-row__date">{month}<strong>{day}</strong></div>
+              <div className={`timeline-dot ${i === 0 ? "timeline-dot--filled" : ""}`}></div>
+              <div className="timeline-row__title">{t.title}</div>
+              <span className={`badge ${isMilestone ? "badge--milestone" : "badge--upcoming"}`}>{t.category}</span>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+};
 
 const AnalyticsSnapshot = ({ docs, onViewAll }) => {
   const top = [...docs].sort((a, b) => b.views - a.views)[0];
@@ -141,16 +186,16 @@ const AnalyticsSnapshot = ({ docs, onViewAll }) => {
           <div className="kpi__sub">{top.title}</div>
         </div>
         <div className="kpi">
-          <div className="kpi__icon"><Icon name="trend-up" size={14} /></div>
-          <div className="kpi__label">Recent Views (7d)</div>
-          <div className="kpi__value">{Math.round(totalViews * 0.18).toLocaleString()}</div>
-          <div className="kpi__delta kpi__delta--up"><Icon name="trend-up" size={11} /> 18% vs prev week</div>
+          <div className="kpi__icon"><Icon name="download" size={14} /></div>
+          <div className="kpi__label">Total Downloads</div>
+          <div className="kpi__value">{totalDownloads.toLocaleString()}</div>
+          <div className="kpi__sub">across all documents</div>
         </div>
         <div className="kpi">
-          <div className="kpi__icon"><Icon name="download" size={14} /></div>
-          <div className="kpi__label">Downloads (7d)</div>
-          <div className="kpi__value">{Math.round(totalDownloads * 0.12).toLocaleString()}</div>
-          <div className="kpi__delta kpi__delta--down"><Icon name="trend-down" size={11} /> 6% vs prev week</div>
+          <div className="kpi__icon"><Icon name="doc" size={14} /></div>
+          <div className="kpi__label">Documents</div>
+          <div className="kpi__value">{docs.length}</div>
+          <div className="kpi__sub">in library</div>
         </div>
       </div>
     </section>
@@ -244,7 +289,7 @@ const BigIdeasBoard = ({ ideas, onAdd, draggable = true, compact = false }) => {
           >
             <div className="sticky__pin" aria-hidden="true"></div>
             <h4 className="sticky__title">{it.title}</h4>
-            {!compact && it.desc && <p style={{ margin: 0, fontSize: 11, lineHeight: 1.4 }}>{it.desc}</p>}
+            {it.desc && <p style={{ margin: 0, fontSize: 11, lineHeight: 1.4 }}>{it.desc}</p>}
             <div className="sticky__author">
               <Icon name="user" size={11} /> {it.author || "Anonymous"}
             </div>
@@ -308,7 +353,7 @@ const DocCard = ({ doc, onView, onDownload, onOpenDoc }) => (
           <Icon name="flag" size={11} /> Needs Review
         </span>
       )}
-      <button className="doc-card__menu" aria-label={`Options for ${doc.title}`}>
+      <button className="doc-card__menu" aria-label={`Options for ${doc.title}`} title="Options">
         <Icon name="more" size={16} />
       </button>
     </div>
@@ -408,7 +453,7 @@ const DeferredCard = ({ item, allDocs = [], onView, onRemove }) => {
         )}
       </div>
       {onRemove && (
-        <button type="button" className="deferred-card__dismiss" onClick={() => onRemove(item.id)} aria-label={`Remove deferred item: ${item.itemLabel}`}>
+        <button type="button" className="deferred-card__dismiss" onClick={() => onRemove(item.id)} aria-label={`Remove deferred item: ${item.itemLabel}`} title="Remove">
           <Icon name="x" size={12} />
         </button>
       )}

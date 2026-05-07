@@ -1,6 +1,6 @@
 // ============== Pages: Documents, Calendar, Sign-Off, Big Ideas, Analytics, Admin, Start Here ==============
 
-const PHASES = ["Spring 2026", "Fall 2026", "Future Work"];
+const PHASES = ["Spring 2026", "Summer 2026", "Fall 2026", "Future Work"];
 const CATEGORIES = ["Project Overview", "Strategy & Planning", "Research & Insights", "UX & Design",
   "Technical Documentation", "Governance & Sign-Offs", "Presentations", "Future Opportunities"];
 
@@ -64,7 +64,7 @@ const DocumentsPage = ({ docs, search, onView, onDownload, onOpenDoc, onNav, fix
           <option>All</option><option>Sponsor</option><option>Designer</option><option>Developer</option><option>Academic Supervisor</option>
         </select>
         <select className="filter-select" value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Status">
-          <option>All</option><option>Approved</option><option>In Review</option><option>Draft</option>
+          <option>All</option><option>Approved</option><option>For Review</option><option>In Progress</option><option>Archived</option>
         </select>
         <select className="filter-select" value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort">
           <option value="recent">Most recent</option><option value="az">A → Z</option><option value="views">Most viewed</option>
@@ -178,7 +178,7 @@ const CAT_META = {
   Other:     { emoji: "📌", color: "#7A6FBF" }
 };
 
-const CalendarPage = ({ events, setEvents }) => {
+const CalendarPage = ({ events, setEvents, onActivity }) => {
   const [cursor, setCursor] = React.useState(new Date(2026, 4, 1));
   const [picker, setPicker] = React.useState(null);
   const [filter, setFilter] = React.useState("All");
@@ -211,11 +211,21 @@ const CalendarPage = ({ events, setEvents }) => {
   const openCreate = (dateKey) => setPicker({ date: dateKey, event: null });
   const openEdit = (ev) => setPicker({ date: ev.date, event: ev });
   const saveEvent = (data) => {
-    if (data.id) setEvents(prev => prev.map(e => e.id === data.id ? data : e));
-    else setEvents(prev => [...prev, { ...data, id: "ev" + Date.now() }]);
+    if (data.id) {
+      setEvents(prev => prev.map(e => e.id === data.id ? data : e));
+      onActivity && onActivity("event-edit", data.title);
+    } else {
+      setEvents(prev => [...prev, { ...data, id: "ev" + Date.now() }]);
+      onActivity && onActivity("event-add", data.title);
+    }
     setPicker(null);
   };
-  const deleteEvent = (id) => { setEvents(prev => prev.filter(e => e.id !== id)); setPicker(null); };
+  const deleteEvent = (id) => {
+    const ev = (events || []).find(e => e.id === id);
+    setEvents(prev => prev.filter(e => e.id !== id));
+    if (ev) onActivity && onActivity("event-del", ev.title);
+    setPicker(null);
+  };
 
   // Build 6-row grid (with leading/trailing blanks)
   const cells = [];
@@ -253,9 +263,9 @@ const CalendarPage = ({ events, setEvents }) => {
       </section>
 
       <div className="filters-bar">
-        <button className="btn btn--ghost btn--small" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))} aria-label="Previous month"><Icon name="chevron-left" size={14} /></button>
+        <button className="btn btn--ghost btn--small" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))} aria-label="Previous month" title="Previous month"><Icon name="chevron-left" size={14} /></button>
         <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 600, minWidth: 180, textAlign: "center" }}>{monthName}</div>
-        <button className="btn btn--ghost btn--small" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))} aria-label="Next month"><Icon name="chevron-right" size={14} /></button>
+        <button className="btn btn--ghost btn--small" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))} aria-label="Next month" title="Next month"><Icon name="chevron-right" size={14} /></button>
         <button className="btn btn--ghost btn--small" onClick={() => setCursor(new Date(2026, 4, 1))}>Today</button>
         <select className="filter-select" value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Category">
           <option>All</option>{Object.keys(CAT_META).map(k => <option key={k}>{k}</option>)}
@@ -304,7 +314,7 @@ const CalendarPage = ({ events, setEvents }) => {
               return <div style={{ padding: "16px 0", color: "var(--text-3)", fontSize: 13 }}>No events scheduled.</div>;
             }
             return all.map((item, i) => {
-              const dt = new Date(item.date);
+              const dt = new Date(item.date + "T00:00");
               const day = dt.getDate();
               const mo = dt.toLocaleString("en-US", { month: "short" });
               const yr = dt.getFullYear();
@@ -366,6 +376,7 @@ const EventModal = ({ event, date, onSave, onDelete, onClose }) => {
     notes: ""
   };
   const [form, setForm] = React.useState({
+    id: initial.id || "",
     title: initial.title || "",
     date: initial.date || date,
     time: initial.time || "",
@@ -398,7 +409,7 @@ const EventModal = ({ event, date, onSave, onDelete, onClose }) => {
       <div className="modal modal--narrow" onClick={(e) => e.stopPropagation()}>
         <div className="modal__header">
           <h2>{event ? "Edit event" : "New event"}</h2>
-          <button className="modal__close" onClick={onClose} aria-label="Close"><Icon name="x" size={16} /></button>
+          <button className="modal__close" onClick={onClose} aria-label="Close" title="Close"><Icon name="x" size={16} /></button>
         </div>
         <div className="modal__body">
           {/* Emoji + title row */}
@@ -409,6 +420,7 @@ const EventModal = ({ event, date, onSave, onDelete, onClose }) => {
               onClick={() => { setEmojiOpen(o => !o); setCatOpen(false); }}
               aria-label="Choose emoji"
               aria-expanded={emojiOpen}
+              title="Choose emoji"
               style={{ fontSize: 22 }}
             >
               {displayEmoji}
@@ -457,6 +469,7 @@ const EventModal = ({ event, date, onSave, onDelete, onClose }) => {
               className="cat-trigger"
               onClick={() => { setCatOpen(o => !o); setEmojiOpen(false); }}
               aria-expanded={catOpen}
+              title="Choose category"
             >
               <span className="cat-trigger__swatch" style={{ background: displayColor }} />
               <span>{form.category}</span>
@@ -815,8 +828,8 @@ const SignOffForm = ({ form, allDocs = [], onSubmit, onBack, onView }) => {
 };
 
 // ----- Big Ideas Page -----
-const BigIdeasPage = ({ ideas, onAdd }) => {
-  const [draft, setDraft] = React.useState({ title: "", desc: "", category: "Future Feature", anonymous: true, name: "", color: "yellow" });
+const BigIdeasPage = ({ ideas, onAdd, profile }) => {
+  const [draft, setDraft] = React.useState({ title: "", desc: "", category: "Future Feature", anonymous: true, color: "yellow" });
   const [filter, setFilter] = React.useState("All");
   const cats = ["All", "Future Feature", "Research Opportunity", "Accessibility Improvement", "Partnership Idea",
                 "Content Idea", "Technical Improvement", "Wild / Experimental", "Open Question"];
@@ -826,8 +839,8 @@ const BigIdeasPage = ({ ideas, onAdd }) => {
     e.preventDefault();
     if (!draft.title.trim()) return;
     onAdd({ id: "i" + Date.now(), title: draft.title, desc: draft.desc, category: draft.category,
-            author: draft.anonymous ? "Anonymous" : (draft.name || "Anonymous"), color: draft.color, x: 0, y: 0 });
-    setDraft({ title: "", desc: "", category: "Future Feature", anonymous: true, name: "", color: "yellow" });
+            author: draft.anonymous ? "Anonymous" : (profile?.username || "Anonymous"), color: draft.color, x: 0, y: 0 });
+    setDraft({ title: "", desc: "", category: "Future Feature", anonymous: true, color: "yellow" });
   };
 
   const filtered = filter === "All" ? ideas : ideas.filter(i => i.category === filter);
@@ -859,7 +872,13 @@ const BigIdeasPage = ({ ideas, onAdd }) => {
             <span className="switch__track"><span className="switch__thumb"></span></span>
             <span className="switch__label">Include my name</span>
           </label>
-          {!draft.anonymous && <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="Your name" aria-label="Your name" />}
+          {!draft.anonymous && (
+            profile?.username
+              ? <div style={{ fontSize: 12, color: "var(--text-2)", padding: "4px 8px", background: "var(--surface-2)", borderRadius: 6 }}>
+                  Will post as <strong>{profile.username}</strong>
+                </div>
+              : <input value={draft.name || ""} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="Your name" aria-label="Your name" />
+          )}
           <div className="sticky-add__colors" role="radiogroup" aria-label="Sticky color">
             <span style={{ fontSize: 11, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Color</span>
             {colors.map(c => (
@@ -884,15 +903,17 @@ const AnalyticsPage = ({ docs, activity = [] }) => {
   const sortedD = [...docs].sort((a, b) => b.downloads - a.downloads);
   const totalV = docs.reduce((s, d) => s + d.views, 0);
   const totalD = docs.reduce((s, d) => s + d.downloads, 0);
+  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const recentActions = activity.filter(a => a.when && a.when.includes("T") && new Date(a.when).getTime() > sevenDaysAgo).length;
   return (
     <div>
-      <div className="page-header"><h1>Analytics & History</h1><p>Anonymous usage data: views, downloads, and recent activity.</p></div>
+      <div className="page-header"><h1>Analytics & History</h1><p>Document views, downloads, and portal activity.</p></div>
       <div className="dashboard">
         <section className="card col-4">
           <div className="kpi__icon"><Icon name="eye" size={14} /></div>
           <div className="kpi__label">Total Views</div>
           <div className="kpi__value">{totalV.toLocaleString()}</div>
-          <div className="kpi__sub">across {docs.length} documents</div>
+          <div className="kpi__sub">across {docs.length} document{docs.length !== 1 ? "s" : ""}</div>
         </section>
         <section className="card col-4">
           <div className="kpi__icon"><Icon name="download" size={14} /></div>
@@ -902,9 +923,9 @@ const AnalyticsPage = ({ docs, activity = [] }) => {
         </section>
         <section className="card col-4">
           <div className="kpi__icon"><Icon name="trend-up" size={14} /></div>
-          <div className="kpi__label">Active Sessions (7d)</div>
-          <div className="kpi__value">94</div>
-          <div className="kpi__delta kpi__delta--up"><Icon name="trend-up" size={11} /> 22% vs prev week</div>
+          <div className="kpi__label">Actions (7 days)</div>
+          <div className="kpi__value">{recentActions}</div>
+          <div className="kpi__sub">views, uploads, downloads & more</div>
         </section>
         <section className="card col-4">
           <h3 className="card__title" style={{ marginBottom: 12 }}>Most Viewed</h3>
@@ -928,17 +949,25 @@ const AnalyticsPage = ({ docs, activity = [] }) => {
         </section>
         <section className="card col-4">
           <h3 className="card__title" style={{ marginBottom: 12 }}>Recent Activity</h3>
-          {activity.map(a => (
-            <div className="activity-row" key={a.id}>
-              <div className={`activity-row__icon activity-row__icon--${a.type}`}>
-                <Icon name={a.type === "view" ? "eye" : a.type === "edit" ? "edit" : a.type === "download" ? "download" : "flag"} size={14} />
+          {(!activity || activity.length === 0) ? (
+            <div style={{ padding: "12px 0", color: "var(--text-3)", fontSize: 13 }}>No activity recorded yet.</div>
+          ) : activity.slice(0, 20).map(a => {
+            const AMETA = { view: { icon: "eye", label: "Viewed" }, download: { icon: "download", label: "Downloaded" }, upload: { icon: "plus", label: "Added" }, edit: { icon: "edit", label: "Edited" }, archive: { icon: "archive", label: "Archived" }, delete: { icon: "trash", label: "Deleted" }, signoff: { icon: "check-circle", label: "Sign-off submitted" }, "event-add": { icon: "calendar", label: "Event created" }, "event-edit": { icon: "calendar", label: "Event updated" }, "event-del": { icon: "calendar", label: "Event deleted" } };
+            const m = AMETA[a.type] || { icon: "flag", label: "Action" };
+            const when = a.when && a.when.includes("T") ? (() => { const diff = Date.now() - new Date(a.when).getTime(); const mins = Math.floor(diff / 60000); if (mins < 1) return "just now"; if (mins < 60) return `${mins}m ago`; const hrs = Math.floor(mins / 60); if (hrs < 24) return `${hrs}h ago`; return `${Math.floor(hrs / 24)}d ago`; })() : (a.when || "");
+            return (
+              <div className="activity-row" key={a.id}>
+                <div className={`activity-row__icon activity-row__icon--${a.type}`}>
+                  <Icon name={m.icon} size={14} />
+                </div>
+                <div>
+                  <div className="activity-row__title">{a.title}</div>
+                  <div className="activity-row__sub">{m.label} by {a.who}</div>
+                </div>
+                <div className="activity-row__time">{when}</div>
               </div>
-              <div><div className="activity-row__title">{a.title}</div>
-                <div className="activity-row__sub">{a.type === "view" ? "Viewed by" : a.type === "edit" ? "Edited by" : a.type === "download" ? "Downloaded by" : "Flagged by"} {a.who}</div>
-              </div>
-              <div className="activity-row__time">{a.when}</div>
-            </div>
-          ))}
+            );
+          })}
         </section>
       </div>
     </div>
@@ -993,7 +1022,7 @@ const AdminPage = ({ docs, signoffForms, submissions = [], onToggleReview, onArc
                   </td>
                   <td style={{ padding: "10px 14px", color: "var(--text-2)" }}>{d.phase}</td>
                   <td style={{ padding: "10px 14px", color: "var(--text-2)" }}>{d.category}</td>
-                  <td style={{ padding: "10px 14px" }}><span className={`badge badge--${d.status === "Approved" ? "approved" : d.status === "In Review" ? "review" : "draft"}`}>{d.status}</span></td>
+                  <td style={{ padding: "10px 14px" }}><span className={`badge badge--${d.status === "Approved" ? "approved" : d.status === "For Review" ? "review" : d.status === "Archived" ? "archived" : "draft"}`}>{d.status}</span></td>
                   <td style={{ padding: "10px 14px", color: "var(--text-3)" }}>{fmtDate(d.updated)}</td>
                   <td style={{ padding: "10px 14px" }}>
                     <label className="switch" data-on={d.needsReview} onClick={() => onToggleReview(d.id)} role="switch" aria-checked={d.needsReview} tabIndex={0}
@@ -1002,13 +1031,13 @@ const AdminPage = ({ docs, signoffForms, submissions = [], onToggleReview, onArc
                     </label>
                   </td>
                   <td style={{ padding: "10px 14px", display: "flex", gap: 4 }}>
-                    <button className="btn btn--ghost btn--small" aria-label={`Edit ${d.title}`} onClick={() => setEditing(d)}><Icon name="edit" size={12} /></button>
+                    <button className="btn btn--ghost btn--small" aria-label={`Edit ${d.title}`} title="Edit" onClick={() => setEditing(d)}><Icon name="edit" size={12} /></button>
                     {d.archived
                       ? <>
                           <button className="btn btn--ghost btn--small" onClick={() => onUnarchive(d.id)} aria-label="Restore">Restore</button>
-                          <button className="btn btn--ghost btn--small" style={{ color: "#C0392B" }} onClick={() => setConfirm({ kind: "delete", doc: d })} aria-label="Delete permanently"><Icon name="trash" size={12} /></button>
+                          <button className="btn btn--ghost btn--small" style={{ color: "#C0392B" }} onClick={() => setConfirm({ kind: "delete", doc: d })} aria-label="Delete permanently" title="Delete permanently"><Icon name="trash" size={12} /></button>
                         </>
-                      : <button className="btn btn--ghost btn--small" onClick={() => setConfirm({ kind: "archive", doc: d })} aria-label="Archive"><Icon name="archive" size={12} /></button>
+                      : <button className="btn btn--ghost btn--small" onClick={() => setConfirm({ kind: "archive", doc: d })} aria-label="Archive" title="Archive"><Icon name="archive" size={12} /></button>
                     }
                   </td>
                 </tr>
@@ -1030,7 +1059,7 @@ const AdminPage = ({ docs, signoffForms, submissions = [], onToggleReview, onArc
                   <td style={{ padding: "10px 14px", color: "var(--text-2)" }}>{f.phase}</td>
                   <td style={{ padding: "10px 14px", color: "var(--text-3)" }}>{f.checklist.length} items</td>
                   <td style={{ padding: "10px 14px" }}>
-                    <button className="btn btn--ghost btn--small" style={{ color: "#C0392B" }} onClick={() => onDeleteSignoffForm(f.id)}><Icon name="trash" size={12} /></button>
+                    <button className="btn btn--ghost btn--small" style={{ color: "#C0392B" }} onClick={() => onDeleteSignoffForm(f.id)} title="Delete form"><Icon name="trash" size={12} /></button>
                   </td>
                 </tr>
               ))}
@@ -1112,7 +1141,7 @@ const ConfirmModal = ({ title, message, confirmLabel, danger, onConfirm, onClose
   <div className="modal-backdrop" onClick={onClose}>
     <div className="modal modal--narrow" onClick={(e) => e.stopPropagation()}>
       <div className="modal__header"><h2>{title}</h2>
-        <button className="modal__close" onClick={onClose} aria-label="Close"><Icon name="x" size={16} /></button>
+        <button className="modal__close" onClick={onClose} aria-label="Close" title="Close"><Icon name="x" size={16} /></button>
       </div>
       <div className="modal__body"><p style={{ margin: 0, color: "var(--text-2)" }}>{message}</p></div>
       <div className="modal__footer">
@@ -1123,11 +1152,15 @@ const ConfirmModal = ({ title, message, confirmLabel, danger, onConfirm, onClose
   </div>
 );
 
+const THUMB_KINDS = ["exec","project","specs","style","future","journey","interviews","mission","pitch","governance","arch","api","ai","rbac"];
+
 // ----- Upload Doc Modal -----
 const UploadDocModal = ({ onClose, onUpload }) => {
   const [file, setFile] = React.useState(null);
   const [meta, setMeta] = React.useState({ title: "", description: "", phase: "Spring 2026", category: "Project Overview",
-    status: "Draft", version: "1.0", owner: "Chelsea", tags: "", audience: ["Sponsor"], thumb: "exec" });
+    status: "In Progress", version: "1.0", owner: "Chelsea", tags: "", audience: ["Sponsor"],
+    thumb: THUMB_KINDS[Math.floor(Math.random() * THUMB_KINDS.length)] });
+  const [uploading, setUploading] = React.useState(false);
   const fileRef = React.useRef(null);
 
   const onPick = (f) => {
@@ -1136,16 +1169,27 @@ const UploadDocModal = ({ onClose, onUpload }) => {
     if (!meta.title) setMeta(m => ({ ...m, title: f.name.replace(/\.[^.]+$/, "") }));
   };
 
-  const submit = () => {
-    if (!file || !meta.title.trim()) return;
-    onUpload({ ...meta, tags: meta.tags.split(",").map(s => s.trim()).filter(Boolean), filename: file.name });
+  const submit = async () => {
+    if (!file || !meta.title.trim() || uploading) return;
+    setUploading(true);
+    const docId = "d" + Date.now();
+    const path = `${docId}/${file.name}`;
+    const fileUrl = await window.DLL_DB.uploadFile(path, file);
+    onUpload({
+      ...meta,
+      id: docId,
+      tags: meta.tags.split(",").map(s => s.trim()).filter(Boolean),
+      filename: file.name,
+      fileUrl: fileUrl || null,
+      storagePath: fileUrl ? path : null
+    });
   };
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal__header"><h2>Add document</h2>
-          <button className="modal__close" onClick={onClose} aria-label="Close"><Icon name="x" size={16} /></button>
+          <button className="modal__close" onClick={onClose} aria-label="Close" title="Close"><Icon name="x" size={16} /></button>
         </div>
         <div className="modal__body">
           {!file ? (
@@ -1160,7 +1204,7 @@ const UploadDocModal = ({ onClose, onUpload }) => {
           ) : (
             <div style={{ marginBottom: 16 }}>
               <span className="upload-file-pill"><Icon name="doc" size={12} /> {file.name}
-                <button onClick={() => setFile(null)} style={{ background: "transparent", border: "none", color: "inherit", cursor: "pointer", marginLeft: 4 }} aria-label="Remove"><Icon name="x" size={10} /></button>
+                <button onClick={() => setFile(null)} style={{ background: "transparent", border: "none", color: "inherit", cursor: "pointer", marginLeft: 4 }} aria-label="Remove file" title="Remove file"><Icon name="x" size={10} /></button>
               </span>
             </div>
           )}
@@ -1171,14 +1215,16 @@ const UploadDocModal = ({ onClose, onUpload }) => {
             <div className="field" style={{ gridColumn: "1 / -1" }}><label>Description</label><textarea rows={2} value={meta.description} onChange={(e) => setMeta({ ...meta, description: e.target.value })} /></div>
             <div className="field"><label>Phase</label><select className="filter-select" value={meta.phase} onChange={(e) => setMeta({ ...meta, phase: e.target.value })}>{PHASES.map(p => <option key={p}>{p}</option>)}</select></div>
             <div className="field"><label>Category</label><select className="filter-select" value={meta.category} onChange={(e) => setMeta({ ...meta, category: e.target.value })}>{CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></div>
-            <div className="field"><label>Status</label><select className="filter-select" value={meta.status} onChange={(e) => setMeta({ ...meta, status: e.target.value })}><option>Draft</option><option>In Review</option><option>Approved</option></select></div>
+            <div className="field"><label>Status</label><select className="filter-select" value={meta.status} onChange={(e) => setMeta({ ...meta, status: e.target.value })}><option>In Progress</option><option>For Review</option><option>Approved</option><option>Archived</option></select></div>
             <div className="field"><label>Owner</label><input value={meta.owner} onChange={(e) => setMeta({ ...meta, owner: e.target.value })} /></div>
             <div className="field" style={{ gridColumn: "1 / -1" }}><label>Tags (comma-separated)</label><input value={meta.tags} onChange={(e) => setMeta({ ...meta, tags: e.target.value })} placeholder="research, MVP, governance" /></div>
           </div>
         </div>
         <div className="modal__footer">
           <button className="btn btn--ghost" onClick={onClose}>Cancel</button>
-          <button className="btn btn--primary" onClick={submit} disabled={!file || !meta.title.trim()}><Icon name="plus" size={14} /> Add document</button>
+          <button className="btn btn--primary" onClick={submit} disabled={!file || !meta.title.trim() || uploading}>
+            <Icon name="plus" size={14} /> {uploading ? "Uploading…" : "Add document"}
+          </button>
         </div>
       </div>
     </div>
@@ -1193,7 +1239,7 @@ const EditDocModal = ({ doc, onClose, onSave }) => {
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal__header"><h2>Edit document</h2>
-          <button className="modal__close" onClick={onClose} aria-label="Close"><Icon name="x" size={16} /></button>
+          <button className="modal__close" onClick={onClose} aria-label="Close" title="Close"><Icon name="x" size={16} /></button>
         </div>
         <div className="modal__body">
           <div className="form-grid">
@@ -1202,7 +1248,7 @@ const EditDocModal = ({ doc, onClose, onSave }) => {
             <div className="field" style={{ gridColumn: "1 / -1" }}><label>Description</label><textarea rows={2} value={m.description} onChange={(e) => setM({ ...m, description: e.target.value })} /></div>
             <div className="field"><label>Phase</label><select className="filter-select" value={m.phase} onChange={(e) => setM({ ...m, phase: e.target.value })}>{PHASES.map(p => <option key={p}>{p}</option>)}</select></div>
             <div className="field"><label>Category</label><select className="filter-select" value={m.category} onChange={(e) => setM({ ...m, category: e.target.value })}>{CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></div>
-            <div className="field"><label>Status</label><select className="filter-select" value={m.status} onChange={(e) => setM({ ...m, status: e.target.value })}><option>Draft</option><option>In Review</option><option>Approved</option></select></div>
+            <div className="field"><label>Status</label><select className="filter-select" value={m.status} onChange={(e) => setM({ ...m, status: e.target.value })}><option>In Progress</option><option>For Review</option><option>Approved</option><option>Archived</option></select></div>
             <div className="field"><label>Owner</label><input value={m.owner} onChange={(e) => setM({ ...m, owner: e.target.value })} /></div>
             <div className="field" style={{ gridColumn: "1 / -1" }}><label>Tags (comma-separated)</label><input value={m.tags} onChange={(e) => setM({ ...m, tags: e.target.value })} /></div>
           </div>
@@ -1335,7 +1381,7 @@ const NewSignoffFormModal = ({ onClose, onSave, allDocs = [] }) => {
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal modal--wide" onClick={(e) => e.stopPropagation()}>
         <div className="modal__header"><h2>New sign-off form</h2>
-          <button className="modal__close" onClick={onClose} aria-label="Close"><Icon name="x" size={16} /></button>
+          <button className="modal__close" onClick={onClose} aria-label="Close" title="Close"><Icon name="x" size={16} /></button>
         </div>
         <div className="modal__body">
           <div className="newform-section">
@@ -1409,7 +1455,7 @@ const NewSignoffFormModal = ({ onClose, onSave, allDocs = [] }) => {
                     <span className="newform-item__num">{i + 1}</span>
                     <input type="text" className="newform-item__input" value={item.label} onChange={(e) => updateItem(i, { label: e.target.value })} placeholder={`Item ${i + 1} — e.g. "Approve final brand colors and logo lockup"`} />
                     {f.checklist.length > 2 && (
-                      <button type="button" className="newform-item__del" onClick={() => removeItem(i)} aria-label={`Remove item ${i + 1}`}><Icon name="trash" size={12} /></button>
+                      <button type="button" className="newform-item__del" onClick={() => removeItem(i)} aria-label={`Remove item ${i + 1}`} title="Remove item"><Icon name="trash" size={12} /></button>
                     )}
                   </div>
                   <div className="newform-item__body">
