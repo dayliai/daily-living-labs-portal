@@ -1,6 +1,6 @@
 // ============== Pages: Documents, Calendar, Sign-Off, Big Ideas, Analytics, Admin, Start Here ==============
 
-const PHASES = ["Spring 2026", "Summer 2026", "Fall 2026", "Future Work"];
+const PHASES = ["Spring 2026", "Summer 2026", "Fall 2026", "Future Work", "Evergreen"];
 const CATEGORIES = ["Project Overview", "Strategy & Planning", "Research & Insights", "UX & Design",
   "Technical Documentation", "Governance & Sign-Offs", "Presentations", "Future Opportunities"];
 
@@ -64,7 +64,7 @@ const DocumentsPage = ({ docs, search, onView, onDownload, onOpenDoc, onNav, fix
           <option>All</option><option>Sponsor</option><option>Designer</option><option>Developer</option><option>Academic Supervisor</option>
         </select>
         <select className="filter-select" value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Status">
-          <option>All</option><option>Approved</option><option>For Review</option><option>In Progress</option><option>Archived</option>
+          <option>All</option><option>Approved</option><option>Current</option><option>For Review</option><option>In Progress</option><option>Archived</option>
         </select>
         <select className="filter-select" value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort">
           <option value="recent">Most recent</option><option value="az">A → Z</option><option value="views">Most viewed</option>
@@ -219,7 +219,10 @@ const StartHerePage = ({ docs, onView, onNav, onStartTour, readDocs = new Set() 
                   style={{ width: "100%", textAlign: "left", padding: 18, display: "grid", gridTemplateColumns: "56px 1fr auto", gap: 18, alignItems: "center", border: "1px solid var(--border)", cursor: "pointer", font: "inherit", color: "inherit", background: "var(--surface)", borderRadius: "var(--radius)" }}>
             <div style={{ width: 56, height: 56, borderRadius: 14, background: "var(--surface-2)", display: "grid", placeItems: "center", fontSize: 26 }}>🏠</div>
             <div>
-              <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 17, marginBottom: 4 }}>Explore the Dashboard</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                <span style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 17 }}>Guided Walkthrough</span>
+                <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.04em", padding: "2px 8px", borderRadius: 999, background: "#FFF3D6", color: "#8A6608", border: "1px solid #F5C842" }}>Coming Soon</span>
+              </div>
               <div style={{ fontSize: 13, color: "var(--text-3)" }}>Get an at-a-glance view of the entire project.</div>
             </div>
             <Icon name="chevron-right" size={18} />
@@ -580,7 +583,7 @@ const EventModal = ({ event, date, onSave, onDelete, onClose }) => {
           <div className="field">
             <label>Phase</label>
             <select className="filter-select" value={form.phase} onChange={(e) => update({ phase: e.target.value })}>
-              <option>Spring 2026</option><option>Fall 2026</option><option>Future Work</option>
+              <option>Spring 2026</option><option>Summer 2026</option><option>Fall 2026</option><option>Future Work</option><option>Evergreen</option>
             </select>
           </div>
 
@@ -1225,7 +1228,7 @@ const AdminPage = ({ docs, signoffForms, submissions = [], onToggleReview, onArc
                   </td>
                   <td style={{ padding: "10px 14px", color: "var(--text-2)" }}>{d.phase}</td>
                   <td style={{ padding: "10px 14px", color: "var(--text-2)" }}>{d.category}</td>
-                  <td style={{ padding: "10px 14px" }}><span className={`badge badge--${d.status === "Approved" ? "approved" : d.status === "For Review" ? "review" : d.status === "Archived" ? "archived" : "draft"}`}>{d.status}</span></td>
+                  <td style={{ padding: "10px 14px" }}><span className={`badge badge--${d.status === "Approved" ? "approved" : d.status === "Current" ? "current" : d.status === "For Review" ? "review" : d.status === "Archived" ? "archived" : "draft"}`}>{d.status}</span></td>
                   <td style={{ padding: "10px 14px", color: "var(--text-3)" }}>{fmtDate(d.updated)}</td>
                   <td style={{ padding: "10px 14px" }}>
                     <label className="switch" data-on={d.needsReview} onClick={() => onToggleReview(d.id)} role="switch" aria-checked={d.needsReview} tabIndex={0}
@@ -1418,7 +1421,7 @@ const UploadDocModal = ({ onClose, onUpload }) => {
             <div className="field" style={{ gridColumn: "1 / -1" }}><label>Description</label><textarea rows={2} value={meta.description} onChange={(e) => setMeta({ ...meta, description: e.target.value })} /></div>
             <div className="field"><label>Phase</label><select className="filter-select" value={meta.phase} onChange={(e) => setMeta({ ...meta, phase: e.target.value })}>{PHASES.map(p => <option key={p}>{p}</option>)}</select></div>
             <div className="field"><label>Category</label><select className="filter-select" value={meta.category} onChange={(e) => setMeta({ ...meta, category: e.target.value })}>{CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></div>
-            <div className="field"><label>Status</label><select className="filter-select" value={meta.status} onChange={(e) => setMeta({ ...meta, status: e.target.value })}><option>In Progress</option><option>For Review</option><option>Approved</option><option>Archived</option></select></div>
+            <div className="field"><label>Status</label><select className="filter-select" value={meta.status} onChange={(e) => setMeta({ ...meta, status: e.target.value })}><option>In Progress</option><option>For Review</option><option>Approved</option><option>Current</option><option>Archived</option></select></div>
             <div className="field"><label>Owner</label><input value={meta.owner} onChange={(e) => setMeta({ ...meta, owner: e.target.value })} /></div>
             <div className="field" style={{ gridColumn: "1 / -1" }}><label>Tags (comma-separated)</label><input value={meta.tags} onChange={(e) => setMeta({ ...meta, tags: e.target.value })} placeholder="research, MVP, governance" /></div>
             <div className="field" style={{ gridColumn: "1 / -1" }}><label>Google Docs URL <span style={{ color: "var(--text-3)", fontWeight: 400, fontSize: 11 }}>(optional)</span></label><input value={meta.googleDocsUrl || ""} onChange={(e) => setMeta({ ...meta, googleDocsUrl: e.target.value })} placeholder="https://docs.google.com/…" /></div>
@@ -1452,7 +1455,7 @@ const EditDocModal = ({ doc, onClose, onSave }) => {
             <div className="field" style={{ gridColumn: "1 / -1" }}><label>Description</label><textarea rows={2} value={m.description} onChange={(e) => setM({ ...m, description: e.target.value })} /></div>
             <div className="field"><label>Phase</label><select className="filter-select" value={m.phase} onChange={(e) => setM({ ...m, phase: e.target.value })}>{PHASES.map(p => <option key={p}>{p}</option>)}</select></div>
             <div className="field"><label>Category</label><select className="filter-select" value={m.category} onChange={(e) => setM({ ...m, category: e.target.value })}>{CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></div>
-            <div className="field"><label>Status</label><select className="filter-select" value={m.status} onChange={(e) => setM({ ...m, status: e.target.value })}><option>In Progress</option><option>For Review</option><option>Approved</option><option>Archived</option></select></div>
+            <div className="field"><label>Status</label><select className="filter-select" value={m.status} onChange={(e) => setM({ ...m, status: e.target.value })}><option>In Progress</option><option>For Review</option><option>Approved</option><option>Current</option><option>Archived</option></select></div>
             <div className="field"><label>Owner</label><input value={m.owner} onChange={(e) => setM({ ...m, owner: e.target.value })} /></div>
             <div className="field" style={{ gridColumn: "1 / -1" }}><label>Tags (comma-separated)</label><input value={m.tags} onChange={(e) => setM({ ...m, tags: e.target.value })} /></div>
             <div className="field" style={{ gridColumn: "1 / -1" }}><label>Google Docs URL <span style={{ color: "var(--text-3)", fontWeight: 400, fontSize: 11 }}>(optional)</span></label><input value={m.googleDocsUrl || ""} onChange={(e) => setM({ ...m, googleDocsUrl: e.target.value })} placeholder="https://docs.google.com/…" /></div>

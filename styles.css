@@ -877,6 +877,7 @@ select:focus-visible,
 .badge--changes { background: var(--status-changes-bg); color: var(--status-changes-text); }
 .badge--draft { background: var(--status-draft-bg); color: var(--status-draft-text); }
 .badge--archived { background: var(--status-archived-bg); color: var(--status-archived-text); }
+.badge--current { background: #E0F0FF; color: #1A5FA8; }
 .badge--milestone { background: #DCF5E0; color: #1A6B30; }
 .badge--upcoming { background: var(--primary-light); color: var(--primary); }
 .badge--needs-review { background: var(--status-changes-bg); color: var(--status-changes-text); }
