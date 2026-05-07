@@ -56,8 +56,19 @@ const StartHerePicker = ({ stepId, docs, pins, onPin, onUnpin, onClose }) => {
 };
 
 const StartHere = ({ docs = [], onView, readDocs = new Set() }) => {
+  const [pins] = React.useState(() => {
+    try { return JSON.parse(localStorage.getItem("dll_start_pins") || "{}"); } catch { return {}; }
+  });
+
+  const resolveDoc = (step) => {
+    const pinnedId = pins[step.id];
+    return pinnedId
+      ? docs.find(d => d.id === pinnedId)
+      : docs.find(d => d.title === step.defaultTitle);
+  };
+
   const handleClick = (step) => {
-    const doc = docs.find(d => d.title === step.defaultTitle);
+    const doc = resolveDoc(step);
     if (doc && onView) onView(doc);
   };
 
@@ -71,7 +82,7 @@ const StartHere = ({ docs = [], onView, readDocs = new Set() }) => {
         </div>
       </div>
       {START_HERE_STEPS.map(step => {
-        const doc = docs.find(d => d.title === step.defaultTitle);
+        const doc = resolveDoc(step);
         const isRead = doc && readDocs.has(doc.id);
         return (
           <button key={step.id} className="start-tile" onClick={() => handleClick(step)} aria-label={`Open ${step.label}`}>
