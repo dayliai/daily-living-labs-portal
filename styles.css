@@ -784,6 +784,8 @@ select:focus-visible,
   border: 1px solid var(--border);
   background: var(--surface);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition);
   cursor: pointer;
 }
@@ -841,6 +843,7 @@ select:focus-visible,
 
 .phase-card__body {
   padding: 14px 20px 18px;
+  flex: 1;
 }
 .phase-card__chips {
   display: flex; flex-wrap: wrap;
