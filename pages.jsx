@@ -1014,7 +1014,111 @@ const BigIdeasPage = ({ ideas, onAdd, onDelete, profile }) => {
 };
 
 // ----- Analytics Page -----
+const AMETA = {
+  view:        { icon: "eye",          label: "Viewed" },
+  download:    { icon: "download",     label: "Downloaded" },
+  upload:      { icon: "plus",         label: "Added" },
+  edit:        { icon: "edit",         label: "Edited" },
+  archive:     { icon: "archive",      label: "Archived" },
+  delete:      { icon: "trash",        label: "Deleted" },
+  signoff:     { icon: "check-circle", label: "Sign-off submitted" },
+  "event-add": { icon: "calendar",     label: "Event created" },
+  "event-edit":{ icon: "calendar",     label: "Event updated" },
+  "event-del": { icon: "calendar",     label: "Event deleted" },
+};
+
+const fmtActivityTime = (when) => {
+  if (!when || !when.includes("T")) return when || "";
+  const diff = Date.now() - new Date(when).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(when).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+};
+
+const ActivityRow = ({ a }) => {
+  const m = AMETA[a.type] || { icon: "flag", label: "Action" };
+  return (
+    <div className="activity-row">
+      <div className={`activity-row__icon activity-row__icon--${a.type}`}><Icon name={m.icon} size={14} /></div>
+      <div>
+        <div className="activity-row__title">{a.title}</div>
+        <div className="activity-row__sub">{m.label} by {a.who}</div>
+      </div>
+      <div className="activity-row__time">{fmtActivityTime(a.when)}</div>
+    </div>
+  );
+};
+
+const ActivityHistoryModal = ({ activity, onClose }) => {
+  const [typeFilter, setTypeFilter] = React.useState("all");
+  const [userFilter, setUserFilter] = React.useState("");
+  const [dateFilter, setDateFilter] = React.useState("");
+
+  React.useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const filtered = activity.filter(a => {
+    if (typeFilter !== "all" && a.type !== typeFilter) return false;
+    if (userFilter && !(a.who || "").toLowerCase().includes(userFilter.toLowerCase())) return false;
+    if (dateFilter && a.when?.includes("T")) {
+      if (new Date(a.when).toISOString().slice(0, 10) !== dateFilter) return false;
+    }
+    return true;
+  });
+
+  const uniqueUsers = [...new Set(activity.map(a => a.who).filter(Boolean))].sort();
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Activity history">
+        <div className="modal__header">
+          <h2>Activity History</h2>
+          <button className="modal__close" onClick={onClose} aria-label="Close"><Icon name="x" size={18} /></button>
+        </div>
+        <div className="modal__body">
+          <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+            <select className="filter-select" value={typeFilter} onChange={e => setTypeFilter(e.target.value)} style={{ flex: 1, minWidth: 140 }}>
+              <option value="all">All actions</option>
+              {Object.entries(AMETA).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+            </select>
+            <select className="filter-select" value={userFilter} onChange={e => setUserFilter(e.target.value)} style={{ flex: 1, minWidth: 140 }}>
+              <option value="">All users</option>
+              {uniqueUsers.map(u => <option key={u} value={u}>{u}</option>)}
+            </select>
+            <input type="date" className="filter-select" value={dateFilter} onChange={e => setDateFilter(e.target.value)} style={{ flex: 1, minWidth: 140 }} />
+            {(typeFilter !== "all" || userFilter || dateFilter) && (
+              <button className="btn btn--ghost btn--small" onClick={() => { setTypeFilter("all"); setUserFilter(""); setDateFilter(""); }}>
+                Clear filters
+              </button>
+            )}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--text-3)", marginBottom: 10 }}>
+            {filtered.length} of {activity.length} entries
+          </div>
+          <div style={{ maxHeight: 420, overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
+            {filtered.length === 0 ? (
+              <div style={{ padding: "24px 0", textAlign: "center", color: "var(--text-3)", fontSize: 13 }}>No activity matches these filters.</div>
+            ) : filtered.map(a => <ActivityRow key={a.id} a={a} />)}
+          </div>
+        </div>
+        <div className="modal__footer">
+          <button className="btn btn--primary" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AnalyticsPage = ({ docs, activity = [] }) => {
+  const [showHistory, setShowHistory] = React.useState(false);
   const sortedV = [...docs].sort((a, b) => b.views - a.views);
   const sortedD = [...docs].sort((a, b) => b.downloads - a.downloads);
   const totalV = docs.reduce((s, d) => s + d.views, 0);
@@ -1023,6 +1127,7 @@ const AnalyticsPage = ({ docs, activity = [] }) => {
   const recentActions = activity.filter(a => a.when && a.when.includes("T") && new Date(a.when).getTime() > sevenDaysAgo).length;
   return (
     <div>
+      {showHistory && <ActivityHistoryModal activity={activity} onClose={() => setShowHistory(false)} />}
       <div className="page-header"><h1>Analytics & History</h1><p>Document views, downloads, and portal activity.</p></div>
       <div className="dashboard">
         <section className="card col-4">
@@ -1052,26 +1157,20 @@ const AnalyticsPage = ({ docs, activity = [] }) => {
           <MiniBarChart items={sortedD.slice(0, 5).map(d => ({ label: d.title, value: d.downloads }))} color="#1F8A5B" />
         </section>
         <section className="card col-4">
-          <h3 className="card__title" style={{ marginBottom: 12 }}>Recent Activity</h3>
-          {(!activity || activity.length === 0) ? (
+          <div className="card__header" style={{ marginBottom: 12 }}>
+            <h3 className="card__title">Recent Activity</h3>
+            {activity.length > 10 && (
+              <button className="card__link" onClick={() => setShowHistory(true)}>View all history</button>
+            )}
+          </div>
+          {activity.length === 0 ? (
             <div style={{ padding: "12px 0", color: "var(--text-3)", fontSize: 13 }}>No activity recorded yet.</div>
-          ) : activity.slice(0, 20).map(a => {
-            const AMETA = { view: { icon: "eye", label: "Viewed" }, download: { icon: "download", label: "Downloaded" }, upload: { icon: "plus", label: "Added" }, edit: { icon: "edit", label: "Edited" }, archive: { icon: "archive", label: "Archived" }, delete: { icon: "trash", label: "Deleted" }, signoff: { icon: "check-circle", label: "Sign-off submitted" }, "event-add": { icon: "calendar", label: "Event created" }, "event-edit": { icon: "calendar", label: "Event updated" }, "event-del": { icon: "calendar", label: "Event deleted" } };
-            const m = AMETA[a.type] || { icon: "flag", label: "Action" };
-            const when = a.when && a.when.includes("T") ? (() => { const diff = Date.now() - new Date(a.when).getTime(); const mins = Math.floor(diff / 60000); if (mins < 1) return "just now"; if (mins < 60) return `${mins}m ago`; const hrs = Math.floor(mins / 60); if (hrs < 24) return `${hrs}h ago`; return `${Math.floor(hrs / 24)}d ago`; })() : (a.when || "");
-            return (
-              <div className="activity-row" key={a.id}>
-                <div className={`activity-row__icon activity-row__icon--${a.type}`}>
-                  <Icon name={m.icon} size={14} />
-                </div>
-                <div>
-                  <div className="activity-row__title">{a.title}</div>
-                  <div className="activity-row__sub">{m.label} by {a.who}</div>
-                </div>
-                <div className="activity-row__time">{when}</div>
-              </div>
-            );
-          })}
+          ) : activity.slice(0, 10).map(a => <ActivityRow key={a.id} a={a} />)}
+          {activity.length > 10 && (
+            <button className="btn btn--ghost btn--small" style={{ marginTop: 12, width: "100%" }} onClick={() => setShowHistory(true)}>
+              View all {activity.length} entries
+            </button>
+          )}
         </section>
       </div>
     </div>
