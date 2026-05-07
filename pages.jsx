@@ -129,23 +129,24 @@ const DocumentsPage = ({ docs, search, onView, onDownload, onOpenDoc, onNav, fix
 };
 
 // ----- Start Here Page -----
-const StartHerePage = ({ docs, onView, onNav, onStartTour, readDocs = new Set() }) => {
+const StartHerePage = ({ docs, onView, onNav, onStartTour, readDocs = new Set(), userId }) => {
   const steps = START_HERE_STEPS;
+  const pinsKey = userId ? `dll_start_pins_${userId}` : "dll_start_pins";
   const [pins, setPins] = React.useState(() => {
-    try { return JSON.parse(localStorage.getItem("dll_start_pins") || "{}"); } catch { return {}; }
+    try { return JSON.parse(localStorage.getItem(pinsKey) || "{}"); } catch { return {}; }
   });
   const [pickerStep, setPickerStep] = React.useState(null);
 
   const pin = (stepId, docId) => {
     const next = { ...pins, [stepId]: docId };
     setPins(next);
-    localStorage.setItem("dll_start_pins", JSON.stringify(next));
+    localStorage.setItem(pinsKey, JSON.stringify(next));
     setPickerStep(null);
   };
   const unpin = (stepId) => {
     const next = { ...pins }; delete next[stepId];
     setPins(next);
-    localStorage.setItem("dll_start_pins", JSON.stringify(next));
+    localStorage.setItem(pinsKey, JSON.stringify(next));
   };
   const getDoc = (step) => {
     const pinnedId = pins[step.id];
@@ -237,6 +238,7 @@ const CAT_META = {
   Review:    { emoji: "📋", color: "#D4843A" },
   Deadline:  { emoji: "⏰", color: "#C0392B" },
   Workshop:  { emoji: "💡", color: "#3D8F5C" },
+  Event:     { emoji: "🎉", color: "#0891B2" },
   Other:     { emoji: "📌", color: "#7A6FBF" }
 };
 
@@ -349,7 +351,7 @@ const CalendarPage = ({ events, setEvents, onActivity }) => {
                 const meta = CAT_META[ev.category] || CAT_META.Other;
                 const bg = ev.color || meta.color;
                 const em = ev.emoji || meta.emoji;
-                const timeStr = ev.time ? `${ev.time} ` : "";
+                const timeStr = ev.time ? (ev.timeEnd ? `${ev.time}–${ev.timeEnd} ` : `${ev.time} `) : "";
                 return (
                   <button key={ev.id} className="calendar__event" style={{ background: bg, color: "white" }}
                           onClick={(e) => { e.stopPropagation(); openEdit(ev); }} title={`${timeStr}${ev.title}`}>
@@ -421,16 +423,24 @@ const CalendarPage = ({ events, setEvents, onActivity }) => {
 
 // ----- Event Modal (rich: emoji + time + category swatches) -----
 const EMOJI_PALETTE = [
-  "🎯","🗓️","📋","⏰","💡","📌","🎉","✨",
-  "🚀","📊","📝","🏁","🌱","🍂","🦋","💜",
-  "📞","🎓","🔬","📚","🛠️","🔍","✅","❓",
+  "🎯","📋","📝","📊","📈","📉","📌","🔖","📅","🗓️","⏰","⌛","⏳","🔔","📢","📣","🚨","🏁","🎌",
+  "💬","💭","📞","📱","💻","🖥️","📡","🔗","📤","📥","✉️","🗂️","📁","📂","📚","🎓","🏫",
+  "💡","🔍","🔬","🛠️","⚙️","🔧","🔨","🏗️","🔑","🗝️","🔐","💰","💎","🧪","🧬","🤖",
+  "🎉","🎊","🎈","🥳","🏆","🥇","🎁","🎂","🎀","⭐","🌟","💫","✨","🔥","💥","⚡","❄️",
+  "🚀","🛤️","🗺️","🧭","📍","🏠","🌐","🏔️","⛰️","🌊","🌈","🌙","☀️","🌞","🌅",
+  "🌱","🌿","🍀","🌺","🌸","🌻","🌹","🌷","🍁","🌴","🎋","🌵","🍄","🌾","🪸",
+  "🦋","🐝","🦁","🐯","🦊","🐻","🦅","🦉","🐬","🦄","🐸","🦒","🐙","🦩","🐺",
+  "👋","👍","👏","🙌","🤝","💪","🧠","👁️","🫶","🤲","🎤","🎨","🎵","🎭","🎪",
+  "💜","💙","💚","❤️","🧡","💛","🩷","🤍","💎","🔮","✅","❌","❓","❗","🔴","🟡","🟢",
 ];
 
 const EventModal = ({ event, date, onSave, onDelete, onClose }) => {
   const initial = event || {
     title: "",
     date,
+    dateEnd: "",
     time: "",
+    timeEnd: "",
     category: "Meeting",
     phase: "Spring 2026",
     emoji: "",
@@ -441,13 +451,17 @@ const EventModal = ({ event, date, onSave, onDelete, onClose }) => {
     id: initial.id || "",
     title: initial.title || "",
     date: initial.date || date,
+    dateEnd: initial.dateEnd || "",
     time: initial.time || "",
+    timeEnd: initial.timeEnd || "",
     category: initial.category || "Meeting",
     phase: initial.phase || "Spring 2026",
     emoji: initial.emoji || "",
     color: initial.color || "",
     notes: initial.notes || ""
   });
+  const [dateMode, setDateMode] = React.useState(initial.dateEnd ? "range" : "single");
+  const [timeMode, setTimeMode] = React.useState(initial.timeEnd ? "range" : "start");
   const [emojiOpen, setEmojiOpen] = React.useState(false);
   const [catOpen, setCatOpen] = React.useState(false);
 
@@ -459,10 +473,11 @@ const EventModal = ({ event, date, onSave, onDelete, onClose }) => {
 
   const save = () => {
     if (!form.title.trim()) return;
-    // Strip empty overrides so the event uses category defaults
     const out = { ...form };
     if (out.emoji === meta.emoji) out.emoji = "";
     if (out.color === meta.color) out.color = "";
+    if (dateMode === "single") out.dateEnd = "";
+    if (timeMode === "start") out.timeEnd = "";
     onSave(out);
   };
 
@@ -497,12 +512,12 @@ const EventModal = ({ event, date, onSave, onDelete, onClose }) => {
           </div>
 
           {emojiOpen && (
-            <div className="emoji-grid" role="listbox" aria-label="Emoji">
+            <div className="emoji-grid emoji-grid--large" role="listbox" aria-label="Emoji">
               {EMOJI_PALETTE.map(em => (
                 <button
                   key={em}
                   type="button"
-                  className="emoji-grid__item"
+                  className={`emoji-grid__item${form.emoji === em ? " is-selected" : ""}`}
                   onClick={() => { update({ emoji: em }); setEmojiOpen(false); }}
                 >
                   {em}
@@ -511,15 +526,39 @@ const EventModal = ({ event, date, onSave, onDelete, onClose }) => {
             </div>
           )}
 
-          {/* Date + time */}
-          <div className="form-grid">
-            <div className="field">
-              <label>Date</label>
-              <input type="date" value={form.date} onChange={(e) => update({ date: e.target.value })} />
+          {/* Date */}
+          <div className="field">
+            <label>Date</label>
+            <div className="range-toggle">
+              <button type="button" className={`range-toggle__btn${dateMode === "single" ? " is-active" : ""}`} onClick={() => setDateMode("single")}>Single date</button>
+              <button type="button" className={`range-toggle__btn${dateMode === "range" ? " is-active" : ""}`} onClick={() => setDateMode("range")}>Date range</button>
             </div>
-            <div className="field">
-              <label>Time <span style={{ color: "var(--text-3)", fontWeight: 400, fontSize: 11 }}>(optional)</span></label>
-              <input type="time" value={form.time} onChange={(e) => update({ time: e.target.value })} />
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input type="date" value={form.date} onChange={(e) => update({ date: e.target.value })} style={{ flex: 1 }} />
+              {dateMode === "range" && (
+                <React.Fragment>
+                  <span style={{ color: "var(--text-3)", fontSize: 12, whiteSpace: "nowrap" }}>to</span>
+                  <input type="date" value={form.dateEnd} onChange={(e) => update({ dateEnd: e.target.value })} style={{ flex: 1 }} />
+                </React.Fragment>
+              )}
+            </div>
+          </div>
+
+          {/* Time */}
+          <div className="field">
+            <label>Time <span style={{ color: "var(--text-3)", fontWeight: 400, fontSize: 11 }}>(optional)</span></label>
+            <div className="range-toggle">
+              <button type="button" className={`range-toggle__btn${timeMode === "start" ? " is-active" : ""}`} onClick={() => setTimeMode("start")}>Start only</button>
+              <button type="button" className={`range-toggle__btn${timeMode === "range" ? " is-active" : ""}`} onClick={() => setTimeMode("range")}>Start &amp; end</button>
+            </div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input type="time" value={form.time} onChange={(e) => update({ time: e.target.value })} style={{ flex: 1 }} />
+              {timeMode === "range" && (
+                <React.Fragment>
+                  <span style={{ color: "var(--text-3)", fontSize: 12, whiteSpace: "nowrap" }}>to</span>
+                  <input type="time" value={form.timeEnd} onChange={(e) => update({ timeEnd: e.target.value })} style={{ flex: 1 }} />
+                </React.Fragment>
+              )}
             </div>
           </div>
 
@@ -548,7 +587,6 @@ const EventModal = ({ event, date, onSave, onDelete, onClose }) => {
                       onClick={() => { update({ category: k, color: "" }); setCatOpen(false); }}
                     >
                       <span className="cat-trigger__swatch" style={{ background: m.color }} />
-                      <span>{m.emoji}</span>
                       <span>{k}</span>
                     </button>
                   ))}

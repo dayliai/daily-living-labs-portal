@@ -8,10 +8,6 @@ const START_HERE_STEPS = [
   { id: "roadmap",  emoji: "🗓️", label: "Roadmap 2026",                 defaultTitle: "Roadmap 2026" },
 ];
 
-const getStartPins = () => {
-  try { return JSON.parse(localStorage.getItem("dll_start_pins") || "{}"); } catch { return {}; }
-};
-const saveStartPins = (pins) => localStorage.setItem("dll_start_pins", JSON.stringify(pins));
 
 const StartHerePicker = ({ stepId, docs, pins, onPin, onUnpin, onClose }) => {
   const [query, setQuery] = React.useState("");
@@ -55,9 +51,10 @@ const StartHerePicker = ({ stepId, docs, pins, onPin, onUnpin, onClose }) => {
   );
 };
 
-const StartHere = ({ docs = [], onView, readDocs = new Set() }) => {
+const StartHere = ({ docs = [], onView, readDocs = new Set(), userId }) => {
+  const pinsKey = userId ? `dll_start_pins_${userId}` : "dll_start_pins";
   const [pins] = React.useState(() => {
-    try { return JSON.parse(localStorage.getItem("dll_start_pins") || "{}"); } catch { return {}; }
+    try { return JSON.parse(localStorage.getItem(pinsKey) || "{}"); } catch { return {}; }
   });
 
   const resolveDoc = (step) => {

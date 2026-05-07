@@ -1,12 +1,13 @@
 // ============== Main App ==============
 
 const AuthScreen = () => {
-  const [tab, setTab] = React.useState("signin");
+  const [tab, setTab] = React.useState("signin"); // "signin" | "signup" | "forgot-password" | "forgot-email"
   const [form, setForm] = React.useState({ email: "", password: "" });
   const [err, setErr] = React.useState("");
   const [msg, setMsg] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const up = (patch) => setForm(f => ({ ...f, ...patch }));
+  const goTab = (t) => { setTab(t); setErr(""); setMsg(""); };
 
   const signIn = async (e) => {
     e.preventDefault();
@@ -26,17 +27,35 @@ const AuthScreen = () => {
     }
   };
 
+  const sendReset = async (e) => {
+    e.preventDefault();
+    setLoading(true); setErr("");
+    const { error } = await window.DLL_DB.resetPasswordForEmail(form.email);
+    setLoading(false);
+    if (error) { setErr(error.message); return; }
+    setMsg("Password reset email sent! Check your inbox and follow the link to set a new password.");
+  };
+
+  const isForgot = tab === "forgot-password" || tab === "forgot-email";
+
   return (
     <div className="lock">
       <div className="lock__card">
         <div className="lock__brand" aria-hidden="true">🦋</div>
         <h1>Daily Living Labs<br />Knowledge Portal</h1>
-        <div className="auth-tabs">
-          <button className={tab === "signin" ? "is-active" : ""} onClick={() => { setTab("signin"); setErr(""); setMsg(""); }}>Sign In</button>
-          <button className={tab === "signup" ? "is-active" : ""} onClick={() => { setTab("signup"); setErr(""); setMsg(""); }}>Create Account</button>
-        </div>
+
+        {!isForgot && (
+          <div className="auth-tabs">
+            <button className={tab === "signin" ? "is-active" : ""} onClick={() => goTab("signin")}>Sign In</button>
+            <button className={tab === "signup" ? "is-active" : ""} onClick={() => goTab("signup")}>Create Account</button>
+          </div>
+        )}
+
         {msg ? (
-          <p style={{ textAlign: "center", color: "var(--text-2)", fontSize: 14 }}>{msg}</p>
+          <div>
+            <p style={{ textAlign: "center", color: "var(--text-2)", fontSize: 14, lineHeight: 1.6 }}>{msg}</p>
+            <button className="btn btn--ghost lock__btn" onClick={() => goTab("signin")}>← Back to Sign In</button>
+          </div>
         ) : tab === "signin" ? (
           <form onSubmit={signIn}>
             <div className="field"><label>Email</label>
@@ -49,8 +68,12 @@ const AuthScreen = () => {
             <button type="submit" className="btn btn--primary lock__btn" disabled={loading}>
               <Icon name="lock" size={14} /> {loading ? "Signing in…" : "Sign in"}
             </button>
+            <div className="lock__forgot-row">
+              <button type="button" className="lock__text-btn" onClick={() => goTab("forgot-password")}>Forgot password?</button>
+              <button type="button" className="lock__text-btn" onClick={() => goTab("forgot-email")}>Forgot email?</button>
+            </div>
           </form>
-        ) : (
+        ) : tab === "signup" ? (
           <form onSubmit={signUp}>
             <div className="field"><label>Email</label>
               <input type="email" value={form.email} onChange={e => up({ email: e.target.value })} placeholder="you@example.com" required autoFocus />
@@ -63,7 +86,30 @@ const AuthScreen = () => {
               {loading ? "Creating account…" : "Create account"}
             </button>
           </form>
-        )}
+        ) : tab === "forgot-password" ? (
+          <form onSubmit={sendReset}>
+            <button type="button" className="lock__text-btn lock__back-btn" onClick={() => goTab("signin")}>← Back to Sign In</button>
+            <h3 className="lock__sub-heading">Reset Password</h3>
+            <p className="lock__sub-desc">Enter your email and we'll send you a link to set a new password.</p>
+            <div className="field"><label>Email</label>
+              <input type="email" value={form.email} onChange={e => up({ email: e.target.value })} placeholder="you@example.com" required autoFocus />
+            </div>
+            <div className="lock__error" role="alert">{err}</div>
+            <button type="submit" className="btn btn--primary lock__btn" disabled={loading || !form.email.trim()}>
+              {loading ? "Sending…" : "Send reset link"}
+            </button>
+          </form>
+        ) : tab === "forgot-email" ? (
+          <div>
+            <button type="button" className="lock__text-btn lock__back-btn" onClick={() => goTab("signin")}>← Back to Sign In</button>
+            <h3 className="lock__sub-heading">Forgot Email?</h3>
+            <p className="lock__sub-desc">Not sure which email you used to sign up? Reach out to the portal admin for help.</p>
+            <a href="mailto:chelsea.alexandra.dustin@gmail.com" className="lock__admin-link">
+              chelsea.alexandra.dustin@gmail.com
+            </a>
+          </div>
+        ) : null}
+
         <div className="lock__hint">Last updated May 7, 2026 · v1.2 · Designed with Claude</div>
       </div>
     </div>
@@ -71,12 +117,40 @@ const AuthScreen = () => {
 };
 
 const ProfileModal = ({ profile, email, onSave, onClose }) => {
+  const [section, setSection] = React.useState("profile");
   const [form, setForm] = React.useState({
     username: profile?.username || "",
     avatar_emoji: profile?.avatar_emoji || "🦋",
     role: profile?.role || ""
   });
+  const [newEmail, setNewEmail] = React.useState("");
+  const [newPassword, setNewPassword] = React.useState("");
+  const [confirmDelete, setConfirmDelete] = React.useState(false);
+  const [acctMsg, setAcctMsg] = React.useState("");
+  const [acctErr, setAcctErr] = React.useState("");
+  const [acctLoading, setAcctLoading] = React.useState("");
   const up = (patch) => setForm(f => ({ ...f, ...patch }));
+
+  const handleUpdateEmail = async () => {
+    if (!newEmail.trim()) return;
+    setAcctLoading("email"); setAcctErr(""); setAcctMsg("");
+    const { error } = await window.DLL_DB.updateUserEmail(newEmail.trim());
+    setAcctLoading("");
+    if (error) { setAcctErr(error.message); return; }
+    setAcctMsg(`Confirmation sent to ${newEmail}. Check your inbox to confirm the change.`);
+    setNewEmail("");
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!newPassword || newPassword.length < 6) { setAcctErr("Password must be at least 6 characters."); return; }
+    setAcctLoading("password"); setAcctErr(""); setAcctMsg("");
+    const { error } = await window.DLL_DB.updateUserPassword(newPassword);
+    setAcctLoading("");
+    if (error) { setAcctErr(error.message); return; }
+    setAcctMsg("Password updated successfully.");
+    setNewPassword("");
+  };
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal modal--narrow" onClick={e => e.stopPropagation()}>
@@ -85,28 +159,84 @@ const ProfileModal = ({ profile, email, onSave, onClose }) => {
           <button className="modal__close" onClick={onClose} title="Close"><Icon name="x" size={16} /></button>
         </div>
         <div className="modal__body">
-          {email && <div style={{ fontSize: 12, color: "var(--text-3)", marginBottom: 16 }}>Signed in as <strong>{email}</strong></div>}
-          <div className="profile-avatar-preview">{form.avatar_emoji}</div>
-          <div className="field">
-            <label>Avatar</label>
-            <div className="emoji-grid emoji-grid--avatar">
-              {AVATAR_EMOJIS.map(em => (
-                <button key={em} type="button" className={`emoji-grid__item ${form.avatar_emoji === em ? "is-selected" : ""}`} onClick={() => up({ avatar_emoji: em })}>{em}</button>
-              ))}
-            </div>
+          <div className="range-toggle" style={{ marginBottom: 20 }}>
+            <button type="button" className={`range-toggle__btn${section === "profile" ? " is-active" : ""}`} onClick={() => setSection("profile")}>Profile</button>
+            <button type="button" className={`range-toggle__btn${section === "account" ? " is-active" : ""}`} onClick={() => { setSection("account"); setAcctMsg(""); setAcctErr(""); setConfirmDelete(false); }}>Account</button>
           </div>
-          <div className="field">
-            <label>Username</label>
-            <input value={form.username} onChange={e => up({ username: e.target.value })} placeholder="Your display name" />
-          </div>
-          <div className="field">
-            <label>Role</label>
-            <input value={form.role} onChange={e => up({ role: e.target.value })} placeholder="e.g. Project Lead, Sponsor, Designer" />
-          </div>
+
+          {section === "profile" ? (
+            <React.Fragment>
+              {email && <div style={{ fontSize: 12, color: "var(--text-3)", marginBottom: 16 }}>Signed in as <strong>{email}</strong></div>}
+              <div className="profile-avatar-preview">{form.avatar_emoji}</div>
+              <div className="field">
+                <label>Avatar</label>
+                <div className="emoji-grid emoji-grid--avatar">
+                  {AVATAR_EMOJIS.map(em => (
+                    <button key={em} type="button" className={`emoji-grid__item ${form.avatar_emoji === em ? "is-selected" : ""}`} onClick={() => up({ avatar_emoji: em })}>{em}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="field">
+                <label>Username</label>
+                <input value={form.username} onChange={e => up({ username: e.target.value })} placeholder="Your display name" />
+              </div>
+              <div className="field">
+                <label>Role</label>
+                <input value={form.role} onChange={e => up({ role: e.target.value })} placeholder="e.g. Project Lead, Sponsor, Designer" />
+              </div>
+            </React.Fragment>
+          ) : (
+            <React.Fragment>
+              {acctMsg && <div className="acct-banner acct-banner--ok">{acctMsg}</div>}
+              {acctErr && <div className="acct-banner acct-banner--err">{acctErr}</div>}
+
+              <div className="field">
+                <label>Update Email</label>
+                <div style={{ fontSize: 12, color: "var(--text-3)", marginBottom: 6 }}>Current: <strong>{email}</strong></div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input type="email" value={newEmail} onChange={e => { setNewEmail(e.target.value); setAcctErr(""); }} placeholder="New email address" style={{ flex: 1 }} />
+                  <button className="btn btn--primary btn--small" onClick={handleUpdateEmail} disabled={!newEmail.trim() || acctLoading === "email"}>
+                    {acctLoading === "email" ? "Sending…" : "Update"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="field" style={{ marginTop: 20 }}>
+                <label>Change Password</label>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input type="password" value={newPassword} onChange={e => { setNewPassword(e.target.value); setAcctErr(""); }} placeholder="New password (min 6 chars)" style={{ flex: 1 }} />
+                  <button className="btn btn--primary btn--small" onClick={handleUpdatePassword} disabled={!newPassword || acctLoading === "password"}>
+                    {acctLoading === "password" ? "Saving…" : "Update"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="acct-danger-zone">
+                <div className="acct-danger-zone__label">Danger Zone</div>
+                {!confirmDelete ? (
+                  <button className="btn btn--ghost btn--danger" style={{ width: "100%" }} onClick={() => setConfirmDelete(true)}>
+                    Delete Account
+                  </button>
+                ) : (
+                  <div className="acct-danger-confirm">
+                    <p>Account deletion requires admin action. This will sign you out — to fully remove your account contact <strong>chelsea.alexandra.dustin@gmail.com</strong>.</p>
+                    <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                      <button className="btn btn--ghost btn--small" onClick={() => setConfirmDelete(false)}>Cancel</button>
+                      <button className="btn btn--small" style={{ background: "#C0392B", color: "white", border: "none", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }} onClick={() => window.DLL_DB.signOut()}>
+                        Sign out &amp; request deletion
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </React.Fragment>
+          )}
         </div>
         <div className="modal__footer">
           <button className="btn btn--ghost" onClick={onClose}>Cancel</button>
-          <button className="btn btn--primary" onClick={() => onSave(form)} disabled={!form.username.trim()}>Save</button>
+          {section === "profile" && (
+            <button className="btn btn--primary" onClick={() => onSave(form)} disabled={!form.username.trim()}>Save</button>
+          )}
         </div>
       </div>
     </div>
@@ -126,9 +256,10 @@ const NAV_ITEMS = [
 ];
 
 const AVATAR_EMOJIS = [
-  "🦋","🌱","🌻","🌸","🐝","🌊","🔥","⭐","🎯","💡",
-  "🦁","🐯","🦊","🐻","🐼","🦅","🦉","🌺","🍀","🎨",
-  "🚀","🌙","☀️","🌈","🎵","🏔️","🌿","💜","🦄","🐬"
+  "🦋","🌱","🌻","🌸","🌺","🌹","🌷","🍀","🌿","🌊","🌈","🌙","☀️","⭐","🌟","💫","✨","🔥","❄️","⚡",
+  "🐝","🦁","🐯","🦊","🐻","🐼","🦅","🦉","🐬","🦄","🐸","🐨","🦭","🦒","🦋","🐺","🦋","🐙","🦀","🦩",
+  "🎯","💡","🚀","🎨","🎵","🏔️","💜","💙","💚","❤️","🧡","💛","🩷","🤍","💎","🔮","🧿","🪬","🎪","🎭",
+  "🍁","🌴","🎋","🌵","🍄","🍒","🍓","🍑","🥝","🌰","🪸","🪷","💐","🌾","🪨","🌏","🗺️","🏄","🧘","🌞",
 ];
 
 const UserAvatar = ({ profile, size = 20 }) => (
@@ -479,37 +610,92 @@ const DocViewer = ({ doc, onClose, onDownload, profile, currentUser }) => {
 };
 
 // ============== Dashboard view ==============
-const Dashboard = ({ docs, ideas, activity, timeline, onView, onDownload, onOpenDoc, onNav, onToggleReview, readDocs }) => {
+const Dashboard = ({ docs, ideas, activity, timeline, events, signoffForms, submissions, userId, onView, onDownload, onOpenDoc, onNav, onToggleReview, readDocs }) => {
   const phaseCount = (p) => docs.filter(d => d.phase === p).length;
+
+  const dismissKey = userId ? `dll_dismissed_alerts_${userId}` : "dll_dismissed_alerts";
+  const [dismissed, setDismissed] = React.useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem(dismissKey) || "[]")); }
+    catch { return new Set(); }
+  });
+  const dismiss = (id) => {
+    const next = new Set([...dismissed, id]);
+    setDismissed(next);
+    localStorage.setItem(dismissKey, JSON.stringify([...next]));
+  };
+
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const eventAlerts = (events || [])
+    .filter(ev => {
+      if (!ev.date || dismissed.has("ev-" + ev.id)) return false;
+      const diff = Math.round((new Date(ev.date + "T00:00") - today) / 86400000);
+      return diff >= 0 && diff <= 3;
+    })
+    .map(ev => ({ ...ev, diff: Math.round((new Date(ev.date + "T00:00") - today) / 86400000) }))
+    .sort((a, b) => a.diff - b.diff);
+
+  const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const signoffAlerts = (signoffForms || []).filter(f => {
+    if (dismissed.has("sf-alert-" + f.id)) return false;
+    if ((submissions || []).find(s => s.formId === f.id)) return false;
+    const ts = parseInt((f.id || "").replace("sf-", "")) || 0;
+    return ts > 0 && ts < oneWeekAgo;
+  });
 
   return (
     <div className="dashboard">
+      {eventAlerts.map(ev => (
+        <div key={ev.id} className="col-12">
+          <div className={`dash-alert dash-alert--${ev.diff <= 1 ? "red" : "yellow"}`}>
+            <span className="dash-alert__text">
+              {ev.diff <= 1 ? "⚠️" : "🔔"} <strong>Reminder! Upcoming event —</strong>{" "}
+              <button className="dash-alert__link" onClick={() => onNav("calendar")}>{ev.title}</button>
+              <span className="dash-alert__when">{ev.diff === 0 ? " · today" : ev.diff === 1 ? " · tomorrow" : ` · in ${ev.diff} days`}</span>
+            </span>
+            <button className="dash-alert__dismiss" onClick={() => dismiss("ev-" + ev.id)} aria-label="Dismiss alert">×</button>
+          </div>
+        </div>
+      ))}
+
+      {signoffAlerts.map(f => (
+        <div key={f.id} className="col-12">
+          <div className="dash-alert dash-alert--yellow">
+            <span className="dash-alert__text">
+              📋 <strong>Sign-off pending —</strong>{" "}
+              <button className="dash-alert__link" onClick={() => onNav("signoff")}>{f.title}</button>
+              {" "}has not been submitted.
+            </span>
+            <button className="dash-alert__dismiss" onClick={() => dismiss("sf-alert-" + f.id)} aria-label="Dismiss alert">×</button>
+          </div>
+        </div>
+      ))}
+
       <div className="col-12">
-        <StartHere docs={docs} onView={onView} readDocs={readDocs} />
+        <StartHere docs={docs} onView={onView} readDocs={readDocs} userId={userId} />
       </div>
 
       <div className="col-3">
         <PhaseCard name="Spring 2026" count={phaseCount("Spring 2026")} icon="🌱" modifier="spring"
-          chips={[{ label: "Research", color: "green" }, { label: "Design", color: "lavender" }, { label: "Technical", color: "blue" }]}
+          chips={[{ label: "Build", color: "blue" }, { label: "Maintenance", color: "green" }, { label: "Docs", color: "lavender" }]}
           focus="Current build maintenance, documentation."
           onClick={() => onNav("docs-spring")} />
       </div>
       <div className="col-3">
-        <PhaseCard name="Summer 2026" count={phaseCount("Summer 2026")} icon="☀️" modifier="summer"
-          chips={[{ label: "Design", color: "lavender" }, { label: "Research", color: "green" }, { label: "Testing", color: "blue" }]}
+        <PhaseCard name="Summer 2026" count={phaseCount("Summer 2026")} icon="🌻" modifier="summer"
+          chips={[{ label: "Discovery", color: "lavender" }, { label: "Research", color: "green" }, { label: "Strategy", color: "peach" }]}
           focus="Discovery, research, and strategy."
           onClick={() => onNav("docs-summer")} />
       </div>
       <div className="col-3">
         <PhaseCard name="Fall 2026" count={phaseCount("Fall 2026")} icon="🍂" modifier="fall"
-          chips={[{ label: "Design", color: "lavender" }, { label: "Technical", color: "blue" }, { label: "Governance", color: "peach" }]}
+          chips={[{ label: "Build", color: "blue" }, { label: "Features", color: "peach" }, { label: "Implementation", color: "lavender" }]}
           focus="Critical build &amp; feature implementation."
           onClick={() => onNav("docs-fall")} />
       </div>
       <div className="col-3">
         <PhaseCard name="Future Work" count={phaseCount("Future Work")} icon="🚀" modifier="future"
-          chips={[{ label: "Technical", color: "blue" }, { label: "Governance", color: "peach" }, { label: "Strategy", color: "lavender" }]}
-          focus="Roadmap, Sustainability, and Innovation."
+          chips={[{ label: "Roadmap", color: "lavender" }, { label: "Sustainability", color: "green" }, { label: "Innovation", color: "blue" }]}
+          focus="Roadmap, sustainability, and innovation."
           onClick={() => onNav("docs-future")} />
       </div>
 
@@ -704,14 +890,19 @@ const App = () => {
   const [search, setSearch] = React.useState("");
   const [showTour, setShowTour] = React.useState(false);
   const [showProfileNudge, setShowProfileNudge] = React.useState(false);
-  const [readDocs, setReadDocs] = React.useState(() => {
-    try { return new Set(JSON.parse(localStorage.getItem("dll_read_docs") || "[]")); } catch { return new Set(); }
-  });
+  const [readDocs, setReadDocs] = React.useState(new Set());
+
+  React.useEffect(() => {
+    if (!currentUser) { setReadDocs(new Set()); return; }
+    try { setReadDocs(new Set(JSON.parse(localStorage.getItem(`dll_read_docs_${currentUser.id}`) || "[]"))); }
+    catch { setReadDocs(new Set()); }
+  }, [currentUser?.id]);
 
   const startTour = () => setShowTour(true);
   const closeTour = () => {
-    const firstTime = !localStorage.getItem("dll_onboarding_seen");
-    localStorage.setItem("dll_onboarding_seen", "1");
+    const key = currentUser ? `dll_onboarding_seen_${currentUser.id}` : "dll_onboarding_seen";
+    const firstTime = !localStorage.getItem(key);
+    localStorage.setItem(key, "1");
     setShowTour(false);
     if (firstTime) setTimeout(() => setShowProfileNudge(true), 500);
   };
@@ -771,7 +962,7 @@ const App = () => {
 
       loadedRef.current = true;
       setDbReady(true);
-      if (!localStorage.getItem("dll_onboarding_seen")) {
+      if (!localStorage.getItem(`dll_onboarding_seen_${currentUser.id}`)) {
         setTimeout(() => setShowTour(true), 600);
       }
     };
@@ -861,7 +1052,7 @@ const App = () => {
     setReadDocs(prev => {
       const next = new Set(prev);
       next.add(doc.id);
-      localStorage.setItem("dll_read_docs", JSON.stringify([...next]));
+      if (currentUser) localStorage.setItem(`dll_read_docs_${currentUser.id}`, JSON.stringify([...next]));
       return next;
     });
   };
@@ -1029,13 +1220,13 @@ const App = () => {
                 profile={profile} email={currentUser?.email}
                 onMenuOpen={() => setSidebarOpen(true)} />
         <div className="page">
-          {view === "dashboard"   && <Dashboard docs={docs} ideas={ideas} activity={activity} timeline={eventsRaw} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} onNav={setView} onToggleReview={onToggleReview} readDocs={readDocs} />}
-          {view === "start"       && <StartHerePage docs={docs} onNav={setView} onView={onView} onStartTour={startTour} readDocs={readDocs} />}
+          {view === "dashboard"   && <Dashboard docs={docs} ideas={ideas} activity={activity} timeline={eventsRaw} events={eventsRaw} signoffForms={signoffForms} submissions={submissions} userId={currentUser?.id} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} onNav={setView} onToggleReview={onToggleReview} readDocs={readDocs} />}
+          {view === "start"       && <StartHerePage docs={docs} onNav={setView} onView={onView} onStartTour={startTour} readDocs={readDocs} userId={currentUser?.id} />}
           {view === "documents"   && <DocumentsPage docs={docs} search={search} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} />}
           {view === "docs-spring"  && <DocumentsPage docs={docs} search={search} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} onNav={setView} fixedPhase="Spring 2026"  pageTitle="Spring 2026 Documents"  pageSubtitle="Current build maintenance, documentation." />}
           {view === "docs-summer"  && <DocumentsPage docs={docs} search={search} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} onNav={setView} fixedPhase="Summer 2026"  pageTitle="Summer 2026 Documents"  pageSubtitle="Discovery, research, and strategy." />}
           {view === "docs-fall"    && <DocumentsPage docs={docs} search={search} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} onNav={setView} fixedPhase="Fall 2026"    pageTitle="Fall 2026 Documents"    pageSubtitle="Critical build & feature implementation." />}
-          {view === "docs-future" && <DocumentsPage docs={docs} search={search} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} onNav={setView} fixedPhase="Future Work" pageTitle="Future Work Documents" pageSubtitle="Roadmap, Sustainability, and Innovation." deferredItems={deferredItems} onRemoveDeferred={onRemoveDeferred} allDocs={docs} />}
+          {view === "docs-future" && <DocumentsPage docs={docs} search={search} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} onNav={setView} fixedPhase="Future Work" pageTitle="Future Work Documents" pageSubtitle="Roadmap, sustainability, and innovation." deferredItems={deferredItems} onRemoveDeferred={onRemoveDeferred} allDocs={docs} />}
           {view === "calendar"    && <CalendarPage events={eventsRaw} setEvents={setEvents} onActivity={logActivity} />}
           {view === "signoff"     && <SignOffPage forms={signoffForms} allDocs={docs} onSubmit={onSubmitSignoff} onView={onView} />}
           {view === "ideas"       && <BigIdeasPage ideas={ideas} onAdd={onAddIdea} onDelete={onHideIdea} profile={profile} />}

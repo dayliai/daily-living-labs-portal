@@ -60,6 +60,9 @@
   const signOut = () => client.auth.signOut();
   const getSession = () => client.auth.getSession();
   const onAuthStateChange = (cb) => client.auth.onAuthStateChange(cb);
+  const resetPasswordForEmail = (email) => client.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+  const updateUserEmail = (email) => client.auth.updateUser({ email });
+  const updateUserPassword = (password) => client.auth.updateUser({ password });
 
   const getProfile = async (userId) => {
     const { data } = await client.from("profiles").select("*").eq("id", userId).single();
@@ -99,5 +102,5 @@
     if (error) console.error("deleteComment:", error.message);
   };
 
-  window.DLL_DB = { getAll, getAllDesc, upsertOne, upsertMany, deleteOne, uploadFile, deleteFile, signIn, signUp, signOut, getSession, onAuthStateChange, getProfile, upsertProfile, subscribeToTable, unsubscribe, getComments, addComment, deleteComment, submitFeedback };
+  window.DLL_DB = { getAll, getAllDesc, upsertOne, upsertMany, deleteOne, uploadFile, deleteFile, signIn, signUp, signOut, getSession, onAuthStateChange, resetPasswordForEmail, updateUserEmail, updateUserPassword, getProfile, upsertProfile, subscribeToTable, unsubscribe, getComments, addComment, deleteComment, submitFeedback };
 })();
