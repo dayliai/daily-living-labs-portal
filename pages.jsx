@@ -1599,6 +1599,19 @@ const NewSignoffFormModal = ({ onClose, onSave, allDocs = [] }) => {
 // ----- Changelog Page -----
 const CHANGELOG_ENTRIES = [
   {
+    version: "1.2.0", date: "2026-05-07", type: "major", title: "Realtime, Comments & Mobile",
+    items: [
+      "Realtime sync — documents, ideas, and activity update live across all open browser sessions",
+      "Document comment threads with realtime sync, emoji avatars, and Cmd+Enter to post",
+      "Mobile hamburger nav — sidebar slides in as a 248px drawer on tablet and phone (≤880px)",
+      "Start Here dashboard widget now respects pinned documents from the Start Here page",
+      "Portal Build Summary and Functional Requirements added as readable in-portal documents",
+      "Analytics inline bar charts for most viewed and most downloaded documents",
+      "Supabase Storage policies fixed — file uploads now land correctly and preview in the viewer",
+      "Removed non-functional three-dot menu button from document cards",
+    ]
+  },
+  {
     version: "1.0.0", date: "2026-05-07", type: "major", title: "Portal Launch 🦋",
     items: [
       "Initial release of the Daily Living Labs Knowledge Portal",

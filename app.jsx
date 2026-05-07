@@ -64,7 +64,7 @@ const AuthScreen = () => {
             </button>
           </form>
         )}
-        <div className="lock__hint">Last updated May 7, 2026 · v1.0 · Created with Claude Design</div>
+        <div className="lock__hint">Last updated May 7, 2026 · v1.2 · Designed with Claude</div>
       </div>
     </div>
   );
