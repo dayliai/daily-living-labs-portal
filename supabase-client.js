@@ -65,5 +65,34 @@
     if (error) console.error("upsertProfile:", error.message);
   };
 
-  window.DLL_DB = { getAll, getAllDesc, upsertOne, upsertMany, deleteOne, uploadFile, deleteFile, signIn, signUp, signOut, getSession, onAuthStateChange, getProfile, upsertProfile };
+  // ---- Realtime subscriptions ----
+  const subscribeToTable = (table, callback) => {
+    const channel = client.channel("rt-" + table + "-" + Date.now())
+      .on("postgres_changes", { event: "*", schema: "public", table: table }, callback)
+      .subscribe();
+    return channel;
+  };
+
+  const unsubscribe = (channel) => {
+    if (channel) client.removeChannel(channel).catch(function () {});
+  };
+
+  // ---- Comments ----
+  const getComments = async (docId) => {
+    const { data, error } = await client.from("comments").select("data").order("created_at", { ascending: true });
+    if (error) { console.error("getComments:", error.message); return []; }
+    return (data || []).map(function (r) { return r.data; }).filter(function (c) { return c.docId === docId; });
+  };
+
+  const addComment = async (comment) => {
+    const { error } = await client.from("comments").upsert({ id: comment.id, data: comment });
+    if (error) console.error("addComment:", error.message);
+  };
+
+  const deleteComment = async (id) => {
+    const { error } = await client.from("comments").delete().eq("id", id);
+    if (error) console.error("deleteComment:", error.message);
+  };
+
+  window.DLL_DB = { getAll, getAllDesc, upsertOne, upsertMany, deleteOne, uploadFile, deleteFile, signIn, signUp, signOut, getSession, onAuthStateChange, getProfile, upsertProfile, subscribeToTable, unsubscribe, getComments, addComment, deleteComment };
 })();

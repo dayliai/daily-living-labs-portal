@@ -1,13 +1,66 @@
 // ============== Dashboard widgets ==============
 
-const StartHere = ({ onNavigate }) => {
-  const tiles = [
-    { id: "exec", label: "Executive Summary", icon: "doc" },
-    { id: "overview", label: "Project Overview", icon: "user" },
-    { id: "specs", label: "Functional & Technical Requirements", icon: "code" },
-    { id: "style", label: "Style Guide", icon: "brush" },
-    { id: "future", label: "Future State Recommendations", icon: "spark" }
-  ];
+const START_HERE_STEPS = [
+  { id: "overview", emoji: "📋", label: "Project Overview",             defaultTitle: "Project Overview" },
+  { id: "collab",   emoji: "🤝", label: "Collaboration Guide",          defaultTitle: "Collaboration Guide" },
+  { id: "tour",     emoji: "🧭", label: "DLL & Dayli AI Guided Tour",  defaultTitle: "DLL & Dayli AI Guided Tour" },
+  { id: "future",   emoji: "🔮", label: "Future State Recommendations", defaultTitle: "Future State Recommendations" },
+  { id: "roadmap",  emoji: "🗓️", label: "Roadmap 2026",                 defaultTitle: "Roadmap 2026" },
+];
+
+const getStartPins = () => {
+  try { return JSON.parse(localStorage.getItem("dll_start_pins") || "{}"); } catch { return {}; }
+};
+const saveStartPins = (pins) => localStorage.setItem("dll_start_pins", JSON.stringify(pins));
+
+const StartHerePicker = ({ stepId, docs, pins, onPin, onUnpin, onClose }) => {
+  const [query, setQuery] = React.useState("");
+  const ref = React.useRef(null);
+  const pinnedId = pins[stepId];
+  const q = query.trim().toLowerCase();
+  const filtered = q ? docs.filter(d => d.title.toLowerCase().includes(q)) : docs;
+
+  React.useEffect(() => {
+    const onDown = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
+  }, [onClose]);
+
+  return (
+    <div ref={ref} className="pin-picker">
+      <div className="pin-picker__search">
+        <Icon name="search" size={12} />
+        <input autoFocus placeholder="Search documents…" value={query} onChange={e => setQuery(e.target.value)} />
+      </div>
+      <div className="pin-picker__list">
+        {filtered.length === 0
+          ? <div className="pin-picker__empty">No documents found</div>
+          : filtered.slice(0, 25).map(d => (
+            <button key={d.id} className={`pin-picker__item${pinnedId === d.id ? " is-selected" : ""}`} onClick={() => onPin(stepId, d.id)}>
+              {pinnedId === d.id && <Icon name="check" size={10} />}
+              <span style={{ flex: 1 }}>{d.title}</span>
+              <span className="pin-picker__meta">{d.phase}</span>
+            </button>
+          ))
+        }
+      </div>
+      {pinnedId && (
+        <button className="pin-picker__unpin" onClick={() => onUnpin(stepId)}>
+          <Icon name="x" size={10} /> Remove pin
+        </button>
+      )}
+    </div>
+  );
+};
+
+const StartHere = ({ docs = [], onView, readDocs = new Set() }) => {
+  const handleClick = (step) => {
+    const doc = docs.find(d => d.title === step.defaultTitle);
+    if (doc && onView) onView(doc);
+  };
+
   return (
     <section className="card start-here" aria-labelledby="start-here-heading">
       <div className="start-here__intro">
@@ -17,13 +70,18 @@ const StartHere = ({ onNavigate }) => {
           <p>Welcome to the Daily Living Labs Knowledge Portal. Begin with these key resources to get aligned.</p>
         </div>
       </div>
-      {tiles.map(t => (
-        <a key={t.id} className="start-tile" href="#" onClick={(e) => { e.preventDefault(); onNavigate && onNavigate(t.id); }}>
-          <div className="start-tile__icon"><Icon name={t.icon} size={20} /></div>
-          <span className="start-tile__label">{t.label}</span>
-          <span className="start-tile__chevron"><Icon name="chevron-right" size={14} /></span>
-        </a>
-      ))}
+      {START_HERE_STEPS.map(step => {
+        const doc = docs.find(d => d.title === step.defaultTitle);
+        const isRead = doc && readDocs.has(doc.id);
+        return (
+          <button key={step.id} className="start-tile" onClick={() => handleClick(step)} aria-label={`Open ${step.label}`}>
+            {isRead && <span className="start-tile__read" aria-label="Read">✓</span>}
+            <div className="start-tile__icon">{step.emoji}</div>
+            <span className="start-tile__label">{step.label}</span>
+            <span className="start-tile__chevron"><Icon name="chevron-right" size={14} /></span>
+          </button>
+        );
+      })}
     </section>
   );
 };
@@ -106,7 +164,7 @@ const RecentActivity = ({ items, onViewAll }) => (
       <a className="card__link" href="#" onClick={(e) => { e.preventDefault(); onViewAll && onViewAll(); }}>View all</a>
     </div>
     {(!items || items.length === 0) ? (
-      <div className="empty" style={{ padding: "12px 0" }}>
+      <div className="empty">
         <div className="empty__emoji">🕐</div>
         <div className="empty__msg">No activity recorded yet.</div>
       </div>
@@ -385,9 +443,6 @@ const DocCard = ({ doc, onView, onDownload, onOpenDoc }) => (
           <Icon name="flag" size={11} /> Needs Review
         </span>
       )}
-      <button className="doc-card__menu" aria-label={`Options for ${doc.title}`} title="Options">
-        <Icon name="more" size={16} />
-      </button>
     </div>
     <div className="doc-card__body">
       <h4 className="doc-card__title">{doc.title}</h4>
@@ -505,7 +560,291 @@ const Badge = ({ tone = "gray", children }) => {
   return <span className="badge" style={styles[tone] || styles.gray}>{children}</span>;
 };
 
+// ============== Onboarding Tour ==============
+const TOUR_STEPS = [
+  {
+    id: "welcome", selector: null, placement: "center", emoji: "🦋",
+    title: "Welcome to Daily Living Labs!",
+    body: "This is your centralized hub for project documentation, collaboration, and planning. Let's take a quick tour — it only takes a minute.",
+  },
+  {
+    id: "start-here", selector: ".start-here", placement: "bottom", emoji: "📋",
+    title: "Start Here",
+    body: "New to the portal? These five cards link to the core documents every team member should read first. Click any card to open the document viewer.",
+  },
+  {
+    id: "phases", selector: ".phase-card--spring", placement: "bottom", emoji: "📁",
+    title: "Project Phases",
+    body: "All documents are organized by phase — Spring, Summer, Fall, and Future Work. Click any phase card to browse everything in that stage of the project.",
+  },
+  {
+    id: "documents", selector: '[data-nav="documents"]', placement: "right", emoji: "📚",
+    title: "Document Library",
+    body: "Browse, filter, search, and download all project documents. Sort by phase, category, status, or audience — and switch between grid and list view.",
+  },
+  {
+    id: "calendar", selector: '[data-nav="calendar"]', placement: "right", emoji: "🗓️",
+    title: "Calendar & Timeline",
+    body: "Track milestones, meetings, and deadlines across both project phases. Add events directly from the calendar and monitor what's coming up.",
+  },
+  {
+    id: "signoff", selector: '[data-nav="signoff"]', placement: "right", emoji: "✅",
+    title: "Sign-Off",
+    body: "Review and approve documentation packages. Each sign-off generates a stamped record — and deferred items automatically move to Future Work.",
+  },
+  {
+    id: "ideas", selector: '[data-nav="ideas"]', placement: "right", emoji: "💡",
+    title: "Big Ideas",
+    body: "Got a bold idea? Post a sticky note to the board, drag it around, filter by category, and contribute anonymously or with your name.",
+  },
+  {
+    id: "search", selector: ".search", placement: "bottom", emoji: "🔍",
+    title: "Quick Search",
+    body: "Find any document, idea, or team member instantly. Press ⌘K (or Ctrl+K) from anywhere in the portal to jump straight to the search bar.",
+  },
+  {
+    id: "done", selector: null, placement: "center", emoji: "🚀",
+    title: "You're all set!",
+    body: "You now know the essentials. Explore at your own pace — and remember, the Start Here tab is always a click away if you need to reorient.",
+  },
+];
+
+const OnboardingTour = ({ onClose }) => {
+  const [step, setStep] = React.useState(0);
+  const [targetRect, setTargetRect] = React.useState(null);
+  const current = TOUR_STEPS[step];
+  const isFirst = step === 0;
+  const isLast = step === TOUR_STEPS.length - 1;
+  const PAD = 12;
+  const PURPLE = "#2D1B69";
+  const TIP_W = 320;
+
+  React.useEffect(() => {
+    if (!current.selector) { setTargetRect(null); return; }
+    const el = document.querySelector(current.selector);
+    if (!el) { setTargetRect(null); return; }
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    const t = setTimeout(() => setTargetRect(el.getBoundingClientRect()), 380);
+    return () => clearTimeout(t);
+  }, [step]);
+
+  React.useEffect(() => {
+    if (!current.selector) return;
+    const onResize = () => {
+      const el = document.querySelector(current.selector);
+      if (el) setTargetRect(el.getBoundingClientRect());
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [step]);
+
+  const next = () => isLast ? onClose() : setStep(s => s + 1);
+  const prev = () => setStep(s => Math.max(0, s - 1));
+
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+
+  const overlayRects = targetRect ? [
+    { left: 0,                    top: 0,                     width: W,                              height: Math.max(0, targetRect.top - PAD) },
+    { left: 0,                    top: targetRect.bottom + PAD, width: W,                            height: Math.max(0, H - targetRect.bottom - PAD) },
+    { left: 0,                    top: targetRect.top - PAD,  width: Math.max(0, targetRect.left - PAD), height: targetRect.height + PAD * 2 },
+    { left: targetRect.right + PAD, top: targetRect.top - PAD, width: Math.max(0, W - targetRect.right - PAD), height: targetRect.height + PAD * 2 },
+  ] : [{ left: 0, top: 0, width: W, height: H }];
+
+  let tipStyle = {};
+  if (!targetRect || current.placement === "center") {
+    tipStyle = { position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)" };
+  } else if (current.placement === "right") {
+    tipStyle = {
+      position: "fixed",
+      left: Math.min(W - TIP_W - 16, targetRect.right + 18),
+      top: Math.max(16, Math.min(H - 380, targetRect.top + targetRect.height / 2 - 160)),
+    };
+  } else {
+    const tipLeft = Math.max(16, Math.min(W - TIP_W - 16, targetRect.left + targetRect.width / 2 - TIP_W / 2));
+    tipStyle = {
+      position: "fixed",
+      left: tipLeft,
+      top: Math.min(H - 380, targetRect.bottom + 14),
+    };
+  }
+
+  return (
+    <React.Fragment>
+      {overlayRects.map((r, i) => (
+        <div key={i} style={{
+          position: "fixed", left: r.left, top: r.top, width: r.width, height: r.height,
+          background: "rgba(12, 6, 36, 0.78)", zIndex: 9000, pointerEvents: "all",
+        }} />
+      ))}
+
+      {targetRect && (
+        <div style={{
+          position: "fixed",
+          left: targetRect.left - PAD, top: targetRect.top - PAD,
+          width: targetRect.width + PAD * 2, height: targetRect.height + PAD * 2,
+          borderRadius: 14, border: "2px solid rgba(167,139,250,0.7)",
+          boxShadow: "0 0 0 4px rgba(167,139,250,0.15)",
+          zIndex: 9001, pointerEvents: "none",
+        }} />
+      )}
+
+      <div style={{
+        ...tipStyle, width: TIP_W, zIndex: 9002, pointerEvents: "all",
+        background: PURPLE, color: "white", borderRadius: 16,
+        padding: "22px 24px", boxShadow: "0 20px 60px rgba(0,0,0,0.55)",
+        fontFamily: "var(--font-body)",
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+            {TOUR_STEPS.map((_, i) => (
+              <div key={i} style={{
+                width: i === step ? 18 : 5, height: 5, borderRadius: 3,
+                background: i === step ? "#A78BFA" : "rgba(255,255,255,0.2)",
+                transition: "width 0.2s, background 0.2s",
+              }} />
+            ))}
+          </div>
+          <button onClick={onClose} aria-label="Close tour" style={{
+            background: "transparent", border: "none", color: "rgba(255,255,255,0.45)",
+            cursor: "pointer", fontSize: 22, padding: 0, lineHeight: 1,
+          }}>×</button>
+        </div>
+
+        <div style={{ fontSize: 38, lineHeight: 1, marginBottom: 10 }}>{current.emoji}</div>
+        <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 19, color: "white", marginBottom: 8, lineHeight: 1.2 }}>
+          {current.title}
+        </div>
+        <p style={{ margin: "0 0 20px", fontSize: 13, lineHeight: 1.65, color: "rgba(255,255,255,0.82)" }}>
+          {current.body}
+        </p>
+
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {!isFirst && (
+            <button onClick={prev} style={{
+              padding: "9px 16px", border: "1px solid rgba(255,255,255,0.25)", background: "transparent",
+              color: "rgba(255,255,255,0.85)", borderRadius: 8, cursor: "pointer",
+              fontSize: 13, fontFamily: "var(--font-body)",
+            }}>← Back</button>
+          )}
+          <button onClick={next} style={{
+            flex: 1, padding: "10px 16px", background: "white", color: PURPLE,
+            border: "none", borderRadius: 8, cursor: "pointer",
+            fontSize: 13, fontWeight: 700, fontFamily: "var(--font-body)",
+          }}>{isLast ? "Let's go! 🎉" : "Next →"}</button>
+          {!isLast && (
+            <button onClick={onClose} style={{
+              padding: "9px 12px", background: "transparent", border: "none",
+              color: "rgba(255,255,255,0.4)", cursor: "pointer",
+              fontSize: 12, fontFamily: "var(--font-body)",
+            }}>Skip</button>
+          )}
+        </div>
+        <div style={{ textAlign: "center", marginTop: 10, fontSize: 11, color: "rgba(255,255,255,0.3)" }}>
+          {step + 1} of {TOUR_STEPS.length}
+        </div>
+      </div>
+    </React.Fragment>
+  );
+};
+
+// ============== Profile Nudge ==============
+const ProfileNudge = ({ onOpenProfile, onClose }) => {
+  const [pos, setPos] = React.useState(null);
+
+  React.useEffect(() => {
+    const el = document.querySelector(".sidebar__user");
+    if (el) setPos(el.getBoundingClientRect());
+  }, []);
+
+  if (!pos) return null;
+
+  const PURPLE = "#2D1B69";
+  const centerY = pos.top + pos.height / 2;
+  const tipLeft = pos.right + 24;
+  const pingSize = Math.max(pos.width, pos.height) + 8;
+
+  return (
+    <React.Fragment>
+      {/* Pulsing ping ring behind the button */}
+      <div className="profile-nudge__ping" style={{
+        left: pos.left + pos.width / 2 - pingSize / 2,
+        top: pos.top + pos.height / 2 - pingSize / 2,
+        width: pingSize,
+        height: pingSize,
+      }} />
+
+      {/* Bouncing arrow */}
+      <div style={{
+        position: "fixed",
+        left: tipLeft - 18,
+        top: centerY - 11,
+        fontSize: 18,
+        color: "#A78BFA",
+        zIndex: 8999,
+        pointerEvents: "none",
+        animation: "nudgeArrow 0.9s ease-in-out infinite",
+      }}>◀</div>
+
+      {/* Tooltip card */}
+      <div className="profile-nudge__card" style={{
+        position: "fixed",
+        left: tipLeft,
+        top: centerY - 90,
+        width: 230,
+        background: PURPLE,
+        color: "white",
+        borderRadius: 14,
+        padding: "16px 18px",
+        boxShadow: "0 16px 40px rgba(0,0,0,0.4)",
+        zIndex: 9000,
+        fontFamily: "var(--font-body)",
+      }}>
+        <div style={{ fontSize: 28, marginBottom: 6 }}>👤</div>
+        <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 15, color: "white", marginBottom: 5, lineHeight: 1.2 }}>
+          One last thing!
+        </div>
+        <p style={{ margin: "0 0 14px", fontSize: 12, color: "rgba(255,255,255,0.82)", lineHeight: 1.55 }}>
+          Set up your profile — add your name and pick an avatar so the team knows who you are.
+        </p>
+        <div style={{ display: "flex", gap: 7 }}>
+          <button onClick={() => { onOpenProfile(); onClose(); }} style={{
+            flex: 1, padding: "8px 10px", background: "white", color: PURPLE,
+            border: "none", borderRadius: 8, cursor: "pointer",
+            fontSize: 12, fontWeight: 700, fontFamily: "var(--font-body)",
+          }}>Set up profile ✨</button>
+          <button onClick={onClose} style={{
+            padding: "8px 10px", background: "transparent",
+            border: "1px solid rgba(255,255,255,0.25)", color: "rgba(255,255,255,0.7)",
+            borderRadius: 8, cursor: "pointer", fontSize: 12, fontFamily: "var(--font-body)",
+          }}>Later</button>
+        </div>
+      </div>
+    </React.Fragment>
+  );
+};
+
+// ============== Mini Bar Chart ==============
+const MiniBarChart = ({ items = [], max, color = "var(--primary)" }) => {
+  const maxVal = max || Math.max(...items.map(d => d.value), 1);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
+      {items.map((d, i) => (
+        <div key={i} className="mini-bar-row">
+          <span className="mini-bar-label" title={d.label}>{d.label}</span>
+          <div className="mini-bar-track">
+            <div className="mini-bar-fill" style={{ width: `${Math.max(2, (d.value / maxVal) * 100)}%`, background: color }} />
+          </div>
+          <span className="mini-bar-val">{d.value.toLocaleString()}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 Object.assign(window, {
-  StartHere, PhaseCard, NeedsReview, RecentActivity, TimelineWidget,
-  AnalyticsSnapshot, BigIdeasBoard, DocCard, DocListRow, DocThumb, DeferredCard, Badge, fmtDate
+  START_HERE_STEPS, StartHerePicker, StartHere,
+  PhaseCard, NeedsReview, RecentActivity, TimelineWidget,
+  AnalyticsSnapshot, BigIdeasBoard, DocCard, DocListRow, DocThumb, DeferredCard, Badge, fmtDate,
+  OnboardingTour, ProfileNudge, MiniBarChart,
 });

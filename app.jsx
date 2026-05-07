@@ -121,6 +121,7 @@ const NAV_ITEMS = [
   { id: "signoff", label: "Sign-Off", icon: "check-circle" },
   { id: "ideas", label: "Big Ideas", icon: "lightbulb" },
   { id: "analytics", label: "Analytics", icon: "bar-chart" },
+  { id: "changelog", label: "Changelog", icon: "clock" },
   { id: "admin", label: "Admin", icon: "settings" }
 ];
 
@@ -166,8 +167,8 @@ const UserMenu = ({ open, onClose, onSignOut, onProfileOpen, profile, email, anc
   );
 };
 
-const Sidebar = ({ active, onNav, reviewCount, userMenuOpen, setUserMenuOpen, onSignOut, onProfileOpen, profile, email }) => (
-  <aside className="sidebar" role="navigation" aria-label="Primary">
+const Sidebar = ({ active, onNav, reviewCount, userMenuOpen, setUserMenuOpen, onSignOut, onProfileOpen, profile, email, open, onClose }) => (
+  <aside className={`sidebar${open ? " sidebar--open" : ""}`} role="navigation" aria-label="Primary">
     <div className="sidebar__brand">
       <div className="sidebar__brand-mark" aria-hidden="true">🦋</div>
       <div className="sidebar__brand-text">Daily Living Labs<small>Knowledge Portal</small></div>
@@ -178,8 +179,9 @@ const Sidebar = ({ active, onNav, reviewCount, userMenuOpen, setUserMenuOpen, on
           (item.id === "documents" && ["documents", "docs-spring", "docs-summer", "docs-fall", "docs-future"].includes(active));
         return (
           <button key={item.id}
+                  data-nav={item.id}
                   className={`nav-item ${isActive ? "nav-item--active" : ""}`}
-                  onClick={() => onNav(item.id)}
+                  onClick={() => { onNav(item.id); onClose && onClose(); }}
                   aria-current={isActive ? "page" : undefined}>
             <Icon name={item.icon} className="nav-item__icon" />
             {item.label}
@@ -209,54 +211,151 @@ const Sidebar = ({ active, onNav, reviewCount, userMenuOpen, setUserMenuOpen, on
   </aside>
 );
 
-const Topbar = ({ title, subtitle, search, setSearch, theme, setTheme, butterfly, setButterfly, onSearchSubmit, userMenuOpen, setUserMenuOpen, onSignOut, onProfileOpen, profile, email }) => (
-  <header className="topbar" role="banner">
-    <div className="topbar__title">
-      <h1>{title}</h1>
-      <p>{subtitle}</p>
-    </div>
-    <div className="search">
-      <span className="search__icon" aria-hidden="true"><Icon name="search" size={16} /></span>
-      <input type="search" placeholder="Search documents, ideas, people…"
-             value={search} onChange={(e) => setSearch(e.target.value)}
-             onKeyDown={(e) => { if (e.key === "Enter") onSearchSubmit(); }}
-             aria-label="Search portal" />
-      <span className="search__kbd" aria-hidden="true">⌘K</span>
-    </div>
-    <div className="toggle-group">
-      <div className="theme-toggle" role="group" aria-label="Theme">
-        <button aria-pressed={theme === "light"} aria-label="Light theme" title="Light theme" onClick={() => setTheme("light")}><Icon name="sun" size={14} /></button>
-        <button aria-pressed={theme === "dark"} aria-label="Dark theme" title="Dark theme" onClick={() => setTheme("dark")}><Icon name="moon" size={14} /></button>
+const Topbar = ({ docs = [], onViewDoc, title, subtitle, search, setSearch, theme, setTheme, butterfly, setButterfly, onSearchSubmit, userMenuOpen, setUserMenuOpen, onSignOut, onProfileOpen, profile, email, onMenuOpen }) => {
+  const [showDrop, setShowDrop] = React.useState(false);
+  const dropRef = React.useRef(null);
+  const inputRef = React.useRef(null);
+
+  const q = search.trim().toLowerCase();
+  const results = q.length >= 1
+    ? docs.filter(d => `${d.title} ${d.description} ${(d.tags || []).join(" ")}`.toLowerCase().includes(q)).slice(0, 6)
+    : [];
+
+  React.useEffect(() => {
+    if (!showDrop) return;
+    const onDown = (e) => { if (dropRef.current && !dropRef.current.contains(e.target)) setShowDrop(false); };
+    const onKey = (e) => { if (e.key === "Escape") { setShowDrop(false); } };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
+  }, [showDrop]);
+
+  const handleChange = (e) => { setSearch(e.target.value); setShowDrop(e.target.value.trim().length > 0); };
+  const handleSelect = (doc) => { setShowDrop(false); setSearch(""); onViewDoc && onViewDoc(doc); };
+  const handleViewAll = () => { setShowDrop(false); onSearchSubmit(); };
+
+  return (
+    <header className="topbar" role="banner">
+      <button className="topbar__menu-btn" onClick={onMenuOpen} aria-label="Open navigation"><Icon name="menu" size={20} /></button>
+      <div className="topbar__title">
+        <h1>{title}</h1>
+        <p>{subtitle}</p>
       </div>
-      <label className="switch" data-on={butterfly} onClick={() => setButterfly(!butterfly)} role="switch" aria-checked={butterfly} tabIndex={0}
-             onKeyDown={(e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); setButterfly(!butterfly); } }}>
-        <span className="switch__label"><span aria-hidden="true">🦋</span> Butterfly Mode</span>
-        <span className="switch__track"><span className="switch__thumb"></span></span>
-      </label>
-      <div className="user-pill-wrap">
-        <button className="user-pill" onClick={() => setUserMenuOpen(o => !o)} aria-haspopup="menu" aria-expanded={userMenuOpen} aria-label="Account menu">
-          <UserAvatar profile={profile} size={18} />
-          <Icon name="chevron-down" size={14} />
-        </button>
-        <UserMenu open={userMenuOpen} onClose={() => setUserMenuOpen(false)} onSignOut={onSignOut} onProfileOpen={onProfileOpen} profile={profile} email={email} anchor="top-right" />
+      <div className="search-wrap" ref={dropRef}>
+        <div className="search">
+          <span className="search__icon" aria-hidden="true"><Icon name="search" size={16} /></span>
+          <input ref={inputRef} type="search" placeholder="Search documents, ideas, people…"
+                 value={search} onChange={handleChange}
+                 onFocus={() => { if (search.trim()) setShowDrop(true); }}
+                 onKeyDown={(e) => { if (e.key === "Enter") { setShowDrop(false); onSearchSubmit(); } }}
+                 aria-label="Search portal" aria-autocomplete="list" />
+          <span className="search__kbd" aria-hidden="true">⌘K</span>
+        </div>
+        {showDrop && (
+          <div className="search-dropdown" role="listbox" aria-label="Search results">
+            {results.length === 0 ? (
+              <div className="search-dropdown__empty">No documents match "{search}"</div>
+            ) : results.map(doc => (
+              <button key={doc.id} className="search-dropdown__item" role="option" onClick={() => handleSelect(doc)}>
+                <div className="search-dropdown__item-thumb"><DocThumb kind={doc.thumb} /></div>
+                <div className="search-dropdown__item-body">
+                  <div className="search-dropdown__item-title">{doc.title}</div>
+                  <div className="search-dropdown__item-meta">{doc.phase} · {doc.category}</div>
+                </div>
+              </button>
+            ))}
+            <div className="search-dropdown__footer">
+              <button className="search-dropdown__all" onClick={handleViewAll}>
+                View all results <Icon name="chevron-right" size={12} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
-  </header>
-);
+      <div className="toggle-group">
+        <div className="theme-toggle" role="group" aria-label="Theme">
+          <button aria-pressed={theme === "light"} aria-label="Light theme" title="Light theme" onClick={() => setTheme("light")}><Icon name="sun" size={14} /></button>
+          <button aria-pressed={theme === "dark"} aria-label="Dark theme" title="Dark theme" onClick={() => setTheme("dark")}><Icon name="moon" size={14} /></button>
+        </div>
+        <label className="switch" data-on={butterfly} onClick={() => setButterfly(!butterfly)} role="switch" aria-checked={butterfly} tabIndex={0}
+               onKeyDown={(e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); setButterfly(!butterfly); } }}>
+          <span className="switch__label"><span aria-hidden="true">🦋</span> Butterfly Mode</span>
+          <span className="switch__track"><span className="switch__thumb"></span></span>
+        </label>
+        <div className="user-pill-wrap">
+          <button className="user-pill" onClick={() => setUserMenuOpen(o => !o)} aria-haspopup="menu" aria-expanded={userMenuOpen} aria-label="Account menu">
+            <UserAvatar profile={profile} size={18} />
+            <Icon name="chevron-down" size={14} />
+          </button>
+          <UserMenu open={userMenuOpen} onClose={() => setUserMenuOpen(false)} onSignOut={onSignOut} onProfileOpen={onProfileOpen} profile={profile} email={email} anchor="top-right" />
+        </div>
+      </div>
+    </header>
+  );
+};
 
 // ============== Document Viewer Modal ==============
-const DocViewer = ({ doc, onClose, onDownload }) => {
+const DocViewer = ({ doc, onClose, onDownload, profile, currentUser }) => {
+  const [comments, setComments] = React.useState([]);
+  const [commentText, setCommentText] = React.useState("");
+  const [posting, setPosting] = React.useState(false);
+
   React.useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  React.useEffect(() => {
+    if (!doc) return;
+    window.DLL_DB.getComments(doc.id).then(setComments);
+    const ch = window.DLL_DB.subscribeToTable("comments", (payload) => {
+      const { eventType, new: row, old } = payload;
+      if (eventType === "INSERT") {
+        const c = row.data;
+        if (c.docId !== doc.id) return;
+        setComments(prev => prev.find(x => x.id === c.id) ? prev : [...prev, c]);
+      } else if (eventType === "DELETE") {
+        setComments(prev => prev.filter(x => x.id !== old.id));
+      }
+    });
+    return () => window.DLL_DB.unsubscribe(ch);
+  }, [doc?.id]);
+
+  const fmtCommentTime = (iso) => {
+    const d = new Date(iso);
+    const diff = Date.now() - d;
+    if (diff < 60000) return "just now";
+    if (diff < 3600000) return Math.floor(diff / 60000) + "m ago";
+    if (diff < 86400000) return Math.floor(diff / 3600000) + "h ago";
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
+
+  const postComment = async () => {
+    if (!commentText.trim() || !currentUser) return;
+    setPosting(true);
+    const c = {
+      id: "cmt-" + Date.now(),
+      docId: doc.id,
+      text: commentText.trim(),
+      author: profile?.username || currentUser?.email?.split("@")[0] || "User",
+      avatar: profile?.avatar_emoji || "🦋",
+      createdAt: new Date().toISOString()
+    };
+    setComments(prev => [...prev, c]);
+    setCommentText("");
+    await window.DLL_DB.addComment(c);
+    setPosting(false);
+  };
+
   if (!doc) return null;
 
   const ext = doc.filename ? doc.filename.split(".").pop().toLowerCase() : "";
   const renderPreview = () => {
     if (!doc.fileUrl) {
+      if (doc.content) {
+        return <div className="doc-content-frame" dangerouslySetInnerHTML={{ __html: doc.content }} />;
+      }
       return (
         <div className="pdf-placeholder">
           <Icon name="doc" size={48} />
@@ -332,9 +431,40 @@ const DocViewer = ({ doc, onClose, onDownload }) => {
             </div>
           </div>
           <p style={{ marginTop: 16, fontSize: 13, color: "var(--text-2)" }}>{doc.description}</p>
+          <div className="comment-thread">
+            <h4 className="comment-thread__title">Discussion ({comments.length})</h4>
+            {comments.length === 0 && <div className="comment-thread__empty">No comments yet. Be the first to add one.</div>}
+            {comments.map(c => (
+              <div key={c.id} className="comment">
+                <div className="comment__avatar">{c.avatar || "🦋"}</div>
+                <div className="comment__body">
+                  <div className="comment__header">
+                    <span className="comment__author">{c.author}</span>
+                    <span className="comment__time">{fmtCommentTime(c.createdAt)}</span>
+                  </div>
+                  <div className="comment__text">{c.text}</div>
+                </div>
+              </div>
+            ))}
+            {currentUser && (
+              <div className="comment-form">
+                <div className="comment__avatar">{profile?.avatar_emoji || "🦋"}</div>
+                <div style={{ flex: 1 }}>
+                  <textarea className="comment-form__input" rows={2}
+                    placeholder="Add a comment… (Cmd+Enter to post)"
+                    value={commentText}
+                    onChange={e => setCommentText(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) postComment(); }} />
+                  <button className="btn btn--primary btn--small" disabled={!commentText.trim() || posting} onClick={postComment} style={{ marginTop: 6 }}>
+                    {posting ? "Posting…" : "Post comment"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
         <div className="modal__footer">
-          {doc.googleDocs && <button className="btn btn--ghost"><Icon name="google-doc" size={14} /> Open in Google Docs</button>}
+          {doc.googleDocsUrl && <a href={doc.googleDocsUrl} target="_blank" rel="noopener noreferrer" className="btn btn--ghost"><Icon name="google-doc" size={14} /> Open in Google Docs</a>}
           {doc.fileUrl && (
             <button className="btn btn--ghost" onClick={() => onDownload && onDownload(doc)}>
               <Icon name="download" size={14} /> Download
@@ -348,18 +478,13 @@ const DocViewer = ({ doc, onClose, onDownload }) => {
 };
 
 // ============== Dashboard view ==============
-const Dashboard = ({ docs, ideas, activity, timeline, onView, onDownload, onOpenDoc, onNav, onToggleReview }) => {
+const Dashboard = ({ docs, ideas, activity, timeline, onView, onDownload, onOpenDoc, onNav, onToggleReview, readDocs }) => {
   const phaseCount = (p) => docs.filter(d => d.phase === p).length;
 
   return (
     <div className="dashboard">
       <div className="col-12">
-        <StartHere onNavigate={(id) => {
-          const map = { exec: "Executive Summary", overview: "Project Overview", specs: "Functional & Technical Requirements",
-                        style: "Style Guide", future: "Future State Recommendations" };
-          const doc = docs.find(d => d.title === map[id]);
-          if (doc) onView(doc);
-        }} />
+        <StartHere docs={docs} onView={onView} readDocs={readDocs} />
       </div>
 
       <div className="col-3">
@@ -439,6 +564,7 @@ const App = () => {
   const [view, setView] = React.useState("dashboard");
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
   const [topUserMenuOpen, setTopUserMenuOpen] = React.useState(false);
+  const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
   React.useEffect(() => {
     window.DLL_DB.getSession().then(({ data: { session } }) => {
@@ -476,6 +602,19 @@ const App = () => {
   const [theme, setTheme] = React.useState(() => localStorage.getItem("dll_theme") || "light");
   const [butterfly, setButterfly] = React.useState(() => localStorage.getItem("dll_butterfly") === "1");
   const [search, setSearch] = React.useState("");
+  const [showTour, setShowTour] = React.useState(false);
+  const [showProfileNudge, setShowProfileNudge] = React.useState(false);
+  const [readDocs, setReadDocs] = React.useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem("dll_read_docs") || "[]")); } catch { return new Set(); }
+  });
+
+  const startTour = () => setShowTour(true);
+  const closeTour = () => {
+    const firstTime = !localStorage.getItem("dll_onboarding_seen");
+    localStorage.setItem("dll_onboarding_seen", "1");
+    setShowTour(false);
+    if (firstTime) setTimeout(() => setShowProfileNudge(true), 500);
+  };
 
   // DB load state
   const [dbReady, setDbReady] = React.useState(false);
@@ -532,6 +671,9 @@ const App = () => {
 
       loadedRef.current = true;
       setDbReady(true);
+      if (!localStorage.getItem("dll_onboarding_seen")) {
+        setTimeout(() => setShowTour(true), 600);
+      }
     };
     load();
   }, [currentUser?.id]);
@@ -559,6 +701,45 @@ const App = () => {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Realtime subscriptions — sync documents, ideas, and activity across sessions
+  React.useEffect(() => {
+    if (!dbReady) return;
+    const chDocs = window.DLL_DB.subscribeToTable("documents", (payload) => {
+      const { eventType, new: row, old } = payload;
+      if (eventType === "INSERT" || eventType === "UPDATE") {
+        const d = row.data;
+        setDocs(prev => {
+          const idx = prev.findIndex(x => x.id === d.id);
+          if (idx >= 0) return prev.map(x => x.id === d.id ? d : x);
+          return [d, ...prev];
+        });
+      } else if (eventType === "DELETE") {
+        setDocs(prev => prev.filter(x => x.id !== old.id));
+      }
+    });
+    const chIdeas = window.DLL_DB.subscribeToTable("big_ideas", (payload) => {
+      const { eventType, new: row, old } = payload;
+      if (eventType === "INSERT") {
+        const i = row.data;
+        setIdeas(prev => prev.find(x => x.id === i.id) ? prev : [i, ...prev]);
+      } else if (eventType === "DELETE") {
+        setIdeas(prev => prev.filter(x => x.id !== old.id));
+      }
+    });
+    const chActivity = window.DLL_DB.subscribeToTable("activity", (payload) => {
+      const { eventType, new: row } = payload;
+      if (eventType === "INSERT") {
+        const a = row.data;
+        setActivity(prev => prev.find(x => x.id === a.id) ? prev : [a, ...prev.slice(0, 99)]);
+      }
+    });
+    return () => {
+      window.DLL_DB.unsubscribe(chDocs);
+      window.DLL_DB.unsubscribe(chIdeas);
+      window.DLL_DB.unsubscribe(chActivity);
+    };
+  }, [dbReady]);
+
   if (!authChecked) return <LoadingScreen />;
   if (!unlocked) return <AuthScreen />;
   if (!dbReady) return <LoadingScreen />;
@@ -577,6 +758,12 @@ const App = () => {
     setDocs(prev => prev.map(d => d.id === doc.id ? updated : d));
     window.DLL_DB.upsertOne("documents", updated);
     logActivity("view", doc.title);
+    setReadDocs(prev => {
+      const next = new Set(prev);
+      next.add(doc.id);
+      localStorage.setItem("dll_read_docs", JSON.stringify([...next]));
+      return next;
+    });
   };
 
   const onDownload = (doc) => {
@@ -716,17 +903,21 @@ const App = () => {
     signoff:       { title: "Daily Living Labs Knowledge Portal", subtitle: "Centralized documentation, review, and future planning." },
     ideas:         { title: "Daily Living Labs Knowledge Portal", subtitle: "Centralized documentation, review, and future planning." },
     analytics:     { title: "Daily Living Labs Knowledge Portal", subtitle: "Centralized documentation, review, and future planning." },
+    changelog:     { title: "Daily Living Labs Knowledge Portal", subtitle: "Centralized documentation, review, and future planning." },
     admin:         { title: "Daily Living Labs Knowledge Portal", subtitle: "Centralized documentation, review, and future planning." }
   };
 
   return (
     <div className="app">
+      {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
       <Sidebar active={view} onNav={setView} reviewCount={reviewCount}
                userMenuOpen={userMenuOpen} setUserMenuOpen={setUserMenuOpen}
                onSignOut={onSignOut} onProfileOpen={() => setProfileOpen(true)}
-               profile={profile} email={currentUser?.email} />
+               profile={profile} email={currentUser?.email}
+               open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main className="main">
-        <Topbar title={(headers[view] || headers.dashboard).title}
+        <Topbar docs={docs} onViewDoc={onView}
+                title={(headers[view] || headers.dashboard).title}
                 subtitle={(headers[view] || headers.dashboard).subtitle}
                 search={search} setSearch={setSearch}
                 theme={theme} setTheme={setTheme}
@@ -734,10 +925,11 @@ const App = () => {
                 onSearchSubmit={() => setView("documents")}
                 userMenuOpen={topUserMenuOpen} setUserMenuOpen={setTopUserMenuOpen}
                 onSignOut={onSignOut} onProfileOpen={() => setProfileOpen(true)}
-                profile={profile} email={currentUser?.email} />
+                profile={profile} email={currentUser?.email}
+                onMenuOpen={() => setSidebarOpen(true)} />
         <div className="page">
-          {view === "dashboard"   && <Dashboard docs={docs} ideas={ideas} activity={activity} timeline={eventsRaw} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} onNav={setView} onToggleReview={onToggleReview} />}
-          {view === "start"       && <StartHerePage docs={docs} onNav={setView} onView={onView} />}
+          {view === "dashboard"   && <Dashboard docs={docs} ideas={ideas} activity={activity} timeline={eventsRaw} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} onNav={setView} onToggleReview={onToggleReview} readDocs={readDocs} />}
+          {view === "start"       && <StartHerePage docs={docs} onNav={setView} onView={onView} onStartTour={startTour} readDocs={readDocs} />}
           {view === "documents"   && <DocumentsPage docs={docs} search={search} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} />}
           {view === "docs-spring"  && <DocumentsPage docs={docs} search={search} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} onNav={setView} fixedPhase="Spring 2026"  pageTitle="Spring 2026 Documents"  pageSubtitle="Discovery, research, and early design foundations." />}
           {view === "docs-summer"  && <DocumentsPage docs={docs} search={search} onView={onView} onDownload={onDownload} onOpenDoc={onOpenDoc} onNav={setView} fixedPhase="Summer 2026"  pageTitle="Summer 2026 Documents"  pageSubtitle="Prototyping, user testing, and design iteration." />}
@@ -747,12 +939,20 @@ const App = () => {
           {view === "signoff"     && <SignOffPage forms={signoffForms} allDocs={docs} onSubmit={onSubmitSignoff} onView={onView} />}
           {view === "ideas"       && <BigIdeasPage ideas={ideas} onAdd={onAddIdea} onDelete={onHideIdea} profile={profile} />}
           {view === "analytics"   && <AnalyticsPage docs={docs} activity={activity} />}
+          {view === "changelog"   && <ChangelogPage />}
           {view === "admin"       && <AdminPage docs={docs} signoffForms={signoffForms} submissions={submissions} ideas={ideas} onToggleReview={onToggleReview} onArchive={onArchive} onUnarchive={onUnarchive} onDelete={onDelete} onUpload={onUpload} onEditDoc={onEditDoc} onAddSignoffForm={onAddSignoffForm} onDeleteSignoffForm={onDeleteSignoffForm} onHideIdea={onHideIdea} />}
         </div>
       </main>
-      {activeDoc && <DocViewer doc={activeDoc} onClose={() => setActiveDoc(null)} onDownload={onDownload} />}
+      {activeDoc && <DocViewer doc={activeDoc} onClose={() => setActiveDoc(null)} onDownload={onDownload} profile={profile} currentUser={currentUser} />}
       {profileOpen && <ProfileModal profile={profile} email={currentUser?.email} onSave={onSaveProfile} onClose={() => setProfileOpen(false)} />}
       {toast && <Toast msg={toast} onDone={() => setToast("")} />}
+      {showTour && <OnboardingTour onClose={closeTour} />}
+      {showProfileNudge && !showTour && (
+        <ProfileNudge
+          onOpenProfile={() => { setProfileOpen(true); setShowProfileNudge(false); }}
+          onClose={() => setShowProfileNudge(false)}
+        />
+      )}
     </div>
   );
 };

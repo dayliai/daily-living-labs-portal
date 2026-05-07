@@ -73,7 +73,103 @@ window.SEED = {
       phase: "Future Work", category: "Strategy & Planning", status: "Draft", needsReview: false,
       version: "0.1", updated: "2026-04-10", owner: "Chelsea", tags: ["auth"],
       audience: ["Developer"], thumb: "rbac", googleDocs: false,
-      views: 22, downloads: 1 }
+      views: 22, downloads: 1 },
+    // Start Here seeded documents
+    { id: "d15", title: "Collaboration Guide", description: "How to contribute, communicate, and collaborate across the Daily Living Labs team.",
+      phase: "Spring 2026", category: "Project Overview", status: "In Progress", needsReview: false,
+      version: "1.0", updated: "2026-05-07", owner: "Chelsea", tags: ["collaboration", "guide"],
+      audience: ["Sponsor", "Designer", "Developer"], thumb: "project", googleDocs: false,
+      views: 0, downloads: 0 },
+    { id: "d16", title: "DLL & Dayli AI Guided Tour", description: "A step-by-step walkthrough of Daily Living Labs and the Dayli AI platform for new team members.",
+      phase: "Spring 2026", category: "Project Overview", status: "In Progress", needsReview: false,
+      version: "1.0", updated: "2026-05-07", owner: "Chelsea", tags: ["tour", "onboarding"],
+      audience: ["Sponsor", "Designer", "Developer", "Academic Supervisor"], thumb: "mission", googleDocs: false,
+      views: 0, downloads: 0 },
+    { id: "d17", title: "Roadmap 2026", description: "Strategic roadmap for the Daily Living Labs portal through Fall 2026 and beyond.",
+      phase: "Spring 2026", category: "Strategy & Planning", status: "In Progress", needsReview: false,
+      version: "1.0", updated: "2026-05-07", owner: "Chelsea", tags: ["roadmap", "strategy"],
+      audience: ["Sponsor", "Academic Supervisor"], thumb: "future", googleDocs: false,
+      views: 0, downloads: 0 },
+    { id: "d18", title: "Portal Build Summary", description: "Technical and strategic overview of how the Knowledge Portal was designed and built.",
+      phase: "Spring 2026", category: "Technical Documentation", status: "Approved", needsReview: false,
+      version: "1.0", updated: "2026-05-07", owner: "Chelsea", tags: ["build", "technical", "architecture"],
+      audience: ["Sponsor", "Developer", "Academic Supervisor"], thumb: "arch", googleDocs: false,
+      views: 0, downloads: 0,
+      content: `<h2>Portal Build Summary</h2>
+<p>A technical and strategic overview of how the Daily Living Labs Knowledge Portal was designed and built for the Spring 2026 capstone project.</p>
+<h3>Technology Stack</h3>
+<ul>
+  <li><strong>React 18</strong> — UI rendering and state management (UMD/CDN, no build step required)</li>
+  <li><strong>Babel Standalone</strong> — In-browser JSX transpilation across five source files</li>
+  <li><strong>Supabase</strong> — Authentication, PostgreSQL database, file storage, and realtime subscriptions</li>
+  <li><strong>Inter, Fraunces, JetBrains Mono</strong> — Google Fonts typography system</li>
+  <li><strong>Vanilla CSS</strong> — Design tokens via CSS custom properties, full light and dark mode support</li>
+</ul>
+<h3>Architecture</h3>
+<p>All database tables use a single unified schema: <code>id text PK, data jsonb, created_at timestamptz</code>. Every entity (document, activity entry, sign-off submission) is stored as a complete JSON object in the <code>data</code> column. This eliminates schema migrations when fields are added and keeps the API layer minimal.</p>
+<p>Components are split across four Babel-transpiled files — <code>icons.jsx</code>, <code>components.jsx</code>, <code>pages.jsx</code>, and <code>app.jsx</code> — each exporting to <code>window</code> via <code>Object.assign</code> so later files can reference earlier ones without a module bundler.</p>
+<h3>Key Features Shipped</h3>
+<ul>
+  <li>Document library with upload, versioning, tagging, and Google Docs integration</li>
+  <li>Live search dropdown across titles, descriptions, and tags</li>
+  <li>Stakeholder sign-off checklists with PDF export via browser print dialog</li>
+  <li>Big Ideas drag-and-drop sticky note board with categories and colors</li>
+  <li>Analytics dashboard with inline bar charts and activity feed</li>
+  <li>Realtime updates via Supabase Postgres change subscriptions</li>
+  <li>Document comment threads with realtime sync across sessions</li>
+  <li>Dark mode and Butterfly Mode easter egg</li>
+  <li>Onboarding tour and profile setup nudge for new users</li>
+  <li>Read tracking: Start Here and Dashboard show which docs you have opened</li>
+</ul>
+<h3>Design System</h3>
+<p>The portal uses a lavender-forward brand palette (<code>--primary: #6B21D9</code>) built entirely with CSS custom properties. The system supports both light and dark mode via a <code>[data-theme="dark"]</code> attribute on the root element. Display headings use Fraunces, body copy uses Inter, and code elements use JetBrains Mono.</p>` },
+    { id: "d19", title: "Portal Functional Requirements", description: "Core functional requirements for the Knowledge Portal MVP, organized by feature area.",
+      phase: "Spring 2026", category: "Technical Documentation", status: "Approved", needsReview: false,
+      version: "1.3", updated: "2026-05-07", owner: "Chelsea", tags: ["requirements", "MVP", "specs"],
+      audience: ["Sponsor", "Developer", "Academic Supervisor"], thumb: "specs", googleDocs: false,
+      views: 0, downloads: 0,
+      content: `<h2>Functional Requirements</h2>
+<p>Core functional requirements for the Daily Living Labs Knowledge Portal MVP, organized by feature area. Version 1.3 — Spring 2026.</p>
+<h3>Authentication</h3>
+<ul>
+  <li><strong>FR-001</strong> Users must sign in with email and password before accessing any portal content</li>
+  <li><strong>FR-002</strong> Users can create accounts; email confirmation is required before first sign-in</li>
+  <li><strong>FR-003</strong> Users can set a display name, avatar emoji, and role from their profile settings</li>
+</ul>
+<h3>Document Management</h3>
+<ul>
+  <li><strong>FR-004</strong> Admins can upload documents with metadata: title, description, phase, category, version, status, tags, and audience</li>
+  <li><strong>FR-005</strong> Documents can link to external Google Docs URLs for collaborative editing</li>
+  <li><strong>FR-006</strong> Users can search documents by title, description, and tags with a live dropdown showing instant results</li>
+  <li><strong>FR-007</strong> Documents automatically track view and download counts, updated on each interaction</li>
+  <li><strong>FR-008</strong> Documents can be flagged for review, archived, or permanently deleted by admins</li>
+</ul>
+<h3>Sign-Off Workflow</h3>
+<ul>
+  <li><strong>FR-009</strong> Stakeholders complete structured sign-off checklists per project phase</li>
+  <li><strong>FR-010</strong> Each checklist item can be approved, conditionally approved, or deferred with optional notes</li>
+  <li><strong>FR-011</strong> Completed sign-offs generate a printable PDF summary via the browser print dialog</li>
+  <li><strong>FR-012</strong> Deferred items are tracked in a Future Work register accessible from the admin panel</li>
+</ul>
+<h3>Collaboration</h3>
+<ul>
+  <li><strong>FR-013</strong> Team members can post Big Ideas to a shared sticky note board with categories and color coding</li>
+  <li><strong>FR-014</strong> Document viewers can leave comments on individual documents</li>
+  <li><strong>FR-015</strong> Comments and new documents sync in realtime across all open browser sessions via Supabase subscriptions</li>
+</ul>
+<h3>Analytics</h3>
+<ul>
+  <li><strong>FR-016</strong> The portal tracks document views, downloads, edits, and user activity in an activity log</li>
+  <li><strong>FR-017</strong> An analytics dashboard shows top viewed and downloaded documents with inline bar charts</li>
+  <li><strong>FR-018</strong> A changelog page documents version history and feature releases for transparency</li>
+</ul>
+<h3>Out of Scope for MVP</h3>
+<ul>
+  <li>Role-based access control — all authenticated users have equal permissions in MVP</li>
+  <li>AI-powered semantic document search across PDF contents</li>
+  <li>Email notifications or automated digest summaries</li>
+  <li>Native mobile application</li>
+</ul>` }
   ],
 
   bigIdeas: [

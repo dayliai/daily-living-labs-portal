@@ -129,40 +129,102 @@ const DocumentsPage = ({ docs, search, onView, onDownload, onOpenDoc, onNav, fix
 };
 
 // ----- Start Here Page -----
-const StartHerePage = ({ docs, onView, onNav }) => {
-  const order = ["Executive Summary", "Project Overview", "Functional & Technical Requirements", "Style Guide", "Future State Recommendations"];
-  const items = order.map((t, i) => {
-    const doc = docs.find(d => d.title === t);
-    return doc ? { doc, num: i + 1 } : null;
-  }).filter(Boolean);
+const StartHerePage = ({ docs, onView, onNav, onStartTour, readDocs = new Set() }) => {
+  const steps = START_HERE_STEPS;
+  const [pins, setPins] = React.useState(() => {
+    try { return JSON.parse(localStorage.getItem("dll_start_pins") || "{}"); } catch { return {}; }
+  });
+  const [pickerStep, setPickerStep] = React.useState(null);
+
+  const pin = (stepId, docId) => {
+    const next = { ...pins, [stepId]: docId };
+    setPins(next);
+    localStorage.setItem("dll_start_pins", JSON.stringify(next));
+    setPickerStep(null);
+  };
+  const unpin = (stepId) => {
+    const next = { ...pins }; delete next[stepId];
+    setPins(next);
+    localStorage.setItem("dll_start_pins", JSON.stringify(next));
+  };
+  const getDoc = (step) => {
+    const pinnedId = pins[step.id];
+    return pinnedId
+      ? docs.find(d => d.id === pinnedId)
+      : docs.find(d => d.title === step.defaultTitle);
+  };
 
   return (
     <div>
       <div className="page-header">
         <h1>Start Here</h1>
-        <p>A guided path through the five core documents — best for first-time visitors.</p>
+        <p>A guided path through five core resources — best for first-time visitors. Use 📌 to pin any document from your library to each step.</p>
       </div>
       <div className="dashboard">
-        {items.map(({ doc, num }) => (
-          <button key={doc.id} className="card card--clickable col-12" onClick={() => onView(doc)}
-                  style={{ textAlign: "left", padding: 18, display: "grid", gridTemplateColumns: "48px 1fr auto", gap: 18, alignItems: "center", border: "none", cursor: "pointer", font: "inherit", color: "inherit" }}>
-            <div className="avatar" style={{ background: "var(--primary)", color: "white", width: 48, height: 48, fontSize: 18 }}>{num}</div>
+        {steps.map(step => {
+          const pinnedId = pins[step.id];
+          const pinnedDoc = pinnedId ? docs.find(d => d.id === pinnedId) : null;
+          const resolvedDoc = getDoc(step);
+          const isOpen = pickerStep === step.id;
+          const isRead = resolvedDoc && readDocs.has(resolvedDoc.id);
+          return (
+            <div key={step.id} className="col-12 start-here-step-wrap">
+              <div className="card start-here-step">
+                <div className="start-here-step__emoji">{step.emoji}</div>
+                <div className="start-here-step__body">
+                  <div className="start-here-step__title">{step.label}</div>
+                  <div className="start-here-step__desc">
+                    {resolvedDoc
+                      ? resolvedDoc.description
+                      : "No document linked yet — pin one using the 📌 button."}
+                  </div>
+                  {pinnedDoc && pinnedDoc.title !== step.label && (
+                    <div className="start-here-step__pin-label">📌 {pinnedDoc.title}</div>
+                  )}
+                  {isRead && <div className="start-here-step__read">✓ Read</div>}
+                </div>
+                <button
+                  className={`start-here-step__pin-btn${pinnedDoc ? " is-pinned" : ""}`}
+                  onClick={() => setPickerStep(prev => prev === step.id ? null : step.id)}
+                  title={pinnedDoc ? `Pinned: ${pinnedDoc.title} — click to change` : "Pin a document to this step"}
+                  aria-label={`Pin document to ${step.label}`}
+                  aria-expanded={isOpen}
+                >
+                  📌
+                </button>
+                <button
+                  className="start-here-step__open-btn"
+                  onClick={() => { if (resolvedDoc && onView) onView(resolvedDoc); }}
+                  disabled={!resolvedDoc}
+                  aria-label={`Open ${step.label}`}
+                >
+                  <Icon name="chevron-right" size={18} />
+                </button>
+              </div>
+              {isOpen && (
+                <StartHerePicker
+                  stepId={step.id}
+                  docs={docs}
+                  pins={pins}
+                  onPin={pin}
+                  onUnpin={unpin}
+                  onClose={() => setPickerStep(null)}
+                />
+              )}
+            </div>
+          );
+        })}
+        <div className="col-12">
+          <button className="card card--clickable" onClick={() => { onNav && onNav("dashboard"); if (onStartTour) onStartTour(); }}
+                  style={{ width: "100%", textAlign: "left", padding: 18, display: "grid", gridTemplateColumns: "56px 1fr auto", gap: 18, alignItems: "center", border: "1px solid var(--border)", cursor: "pointer", font: "inherit", color: "inherit", background: "var(--surface)", borderRadius: "var(--radius)" }}>
+            <div style={{ width: 56, height: 56, borderRadius: 14, background: "var(--surface-2)", display: "grid", placeItems: "center", fontSize: 26 }}>🏠</div>
             <div>
-              <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 17, marginBottom: 4 }}>{doc.title}</div>
-              <div style={{ fontSize: 13, color: "var(--text-3)" }}>{doc.description}</div>
+              <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 17, marginBottom: 4 }}>Explore the Dashboard</div>
+              <div style={{ fontSize: 13, color: "var(--text-3)" }}>Get an at-a-glance view of the entire project.</div>
             </div>
             <Icon name="chevron-right" size={18} />
           </button>
-        ))}
-        <button className="card card--clickable col-12" onClick={() => onNav && onNav("dashboard")}
-                style={{ textAlign: "left", padding: 18, display: "grid", gridTemplateColumns: "48px 1fr auto", gap: 18, alignItems: "center", border: "none", cursor: "pointer", font: "inherit", color: "inherit" }}>
-          <div className="avatar" style={{ background: "var(--surface-2)", color: "var(--primary)", width: 48, height: 48, fontSize: 18 }}>6</div>
-          <div>
-            <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 17, marginBottom: 4 }}>Explore the Dashboard</div>
-            <div style={{ fontSize: 13, color: "var(--text-3)" }}>Get an at-a-glance view of the entire project.</div>
-          </div>
-          <Icon name="chevron-right" size={18} />
-        </button>
+        </div>
       </div>
     </div>
   );
@@ -542,6 +604,60 @@ const EventModal = ({ event, date, onSave, onDelete, onClose }) => {
   );
 };
 
+// ----- Sign-off PDF generator -----
+const generateSignoffPDF = (sub) => {
+  const approveCount = sub.items.filter(i => i.decision === "approve").length;
+  const discussCount = sub.items.filter(i => i.decision === "discuss").length;
+  const deferredCount = sub.items.filter(i => i.decision === "defer").length;
+  const dateStr = new Date(sub.submittedAt).toLocaleDateString("en", { month: "long", day: "numeric", year: "numeric" });
+  const nowStr = new Date().toLocaleString();
+  const rows = sub.items.map((it, i) => `
+    <tr>
+      <td style="padding:10px 12px;border-bottom:1px solid #E8E2F2;color:#8A7DA1;text-align:center;">${i + 1}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #E8E2F2;font-size:13px;color:#1B1230;">${it.label}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #E8E2F2;font-weight:700;font-size:13px;
+        color:${it.decision === "approve" ? "#1F8A5B" : it.decision === "discuss" ? "#B8830A" : "#5B4FCF"};">
+        ${it.decision === "approve" ? "✓ Approved" : it.decision === "discuss" ? "◎ Discuss" : "→ Deferred"}
+      </td>
+    </tr>`).join("");
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>Sign-Off: ${sub.formTitle}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:700px;margin:40px auto;color:#1B1230;font-size:14px;}
+      h1{font-size:26px;margin:0 0 4px;font-weight:700;}
+      .sub{color:#8A7DA1;font-size:13px;margin:0 0 24px;}
+      .meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px;background:#F4ECFF;border-radius:10px;margin-bottom:24px;}
+      .meta dt{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#8A7DA1;margin:0 0 2px;}
+      .meta dd{margin:0;font-weight:600;font-size:14px;}
+      .pills{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;}
+      .pill{padding:5px 14px;border-radius:999px;font-size:12px;font-weight:600;}
+      .pa{background:#E3F8E8;color:#1F6B33;}.pd{background:#FFF3D6;color:#8A6608;}.pf{background:#E8E2F2;color:#5B4FCF;}
+      table{width:100%;border-collapse:collapse;}
+      th{text-align:left;padding:8px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#8A7DA1;border-bottom:2px solid #E8E2F2;}
+      th:first-child{text-align:center;width:40px;}
+      .footer{margin-top:32px;font-size:11px;color:#8A7DA1;border-top:1px solid #E8E2F2;padding-top:16px;}
+      @media print{body{margin:20px;}}
+    </style></head><body>
+    <h1>Sign-Off Record</h1>
+    <p class="sub">${sub.formTitle} &middot; Submitted ${dateStr}</p>
+    <dl class="meta">
+      <div><dt>Prepared By</dt><dd>${sub.preparedBy || "—"}</dd></div>
+      <div><dt>Prepared For</dt><dd>${sub.preparedFor || "—"}</dd></div>
+      ${sub.monthYear ? `<div><dt>Month &amp; Year</dt><dd>${sub.monthYear}</dd></div>` : ""}
+      ${sub.version ? `<div><dt>Version</dt><dd>${sub.version}</dd></div>` : ""}
+    </dl>
+    <div class="pills">
+      <span class="pill pa">✓ ${approveCount} Approved</span>
+      <span class="pill pd">◎ ${discussCount} Discuss</span>
+      <span class="pill pf">→ ${deferredCount} Deferred</span>
+    </div>
+    <table><thead><tr><th>#</th><th>Item</th><th>Decision</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="footer">Daily Living Labs Knowledge Portal &middot; Generated ${nowStr}</div>
+  </body></html>`;
+  const win = window.open("", "_blank");
+  if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 300); }
+};
+
 // ----- Sign-Off Page (cards + form) -----
 const SignOffPage = ({ forms, allDocs, onSubmit, onView }) => {
   const [active, setActive] = React.useState(null); // form definition
@@ -663,7 +779,7 @@ const SignOffForm = ({ form, allDocs = [], onSubmit, onBack, onView }) => {
             </p>
           )}
           <div className="signoff-success__actions">
-            <button className="btn btn--primary" onClick={() => alert("In production, this would download the generated PDF.")}>
+            <button className="btn btn--primary" onClick={() => generateSignoffPDF(submitted)}>
               <Icon name="download" size={14} /> Download PDF
             </button>
             <button className="btn btn--ghost" onClick={onBack}>Back to sign-offs</button>
@@ -929,23 +1045,11 @@ const AnalyticsPage = ({ docs, activity = [] }) => {
         </section>
         <section className="card col-4">
           <h3 className="card__title" style={{ marginBottom: 12 }}>Most Viewed</h3>
-          {sortedV.slice(0, 5).map(d => (
-            <div className="activity-row" key={d.id}>
-              <div className="review-row__thumb" style={{ width: 32, height: 32 }}><DocThumb kind={d.thumb} /></div>
-              <div><div className="activity-row__title">{d.title}</div><div className="activity-row__sub">{d.phase}</div></div>
-              <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, color: "var(--primary)" }}>{d.views.toLocaleString()}</div>
-            </div>
-          ))}
+          <MiniBarChart items={sortedV.slice(0, 5).map(d => ({ label: d.title, value: d.views }))} />
         </section>
         <section className="card col-4">
           <h3 className="card__title" style={{ marginBottom: 12 }}>Most Downloaded</h3>
-          {sortedD.slice(0, 5).map(d => (
-            <div className="activity-row" key={d.id}>
-              <div className="review-row__thumb" style={{ width: 32, height: 32 }}><DocThumb kind={d.thumb} /></div>
-              <div><div className="activity-row__title">{d.title}</div><div className="activity-row__sub">{d.phase}</div></div>
-              <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, color: "var(--primary)" }}>{d.downloads.toLocaleString()}</div>
-            </div>
-          ))}
+          <MiniBarChart items={sortedD.slice(0, 5).map(d => ({ label: d.title, value: d.downloads }))} color="#1F8A5B" />
         </section>
         <section className="card col-4">
           <h3 className="card__title" style={{ marginBottom: 12 }}>Recent Activity</h3>
@@ -1159,7 +1263,7 @@ const UploadDocModal = ({ onClose, onUpload }) => {
   const [file, setFile] = React.useState(null);
   const [meta, setMeta] = React.useState({ title: "", description: "", phase: "Spring 2026", category: "Project Overview",
     status: "In Progress", version: "1.0", owner: "Chelsea", tags: "", audience: ["Sponsor"],
-    thumb: THUMB_KINDS[Math.floor(Math.random() * THUMB_KINDS.length)] });
+    thumb: THUMB_KINDS[Math.floor(Math.random() * THUMB_KINDS.length)], googleDocsUrl: "" });
   const [uploading, setUploading] = React.useState(false);
   const fileRef = React.useRef(null);
 
@@ -1218,6 +1322,7 @@ const UploadDocModal = ({ onClose, onUpload }) => {
             <div className="field"><label>Status</label><select className="filter-select" value={meta.status} onChange={(e) => setMeta({ ...meta, status: e.target.value })}><option>In Progress</option><option>For Review</option><option>Approved</option><option>Archived</option></select></div>
             <div className="field"><label>Owner</label><input value={meta.owner} onChange={(e) => setMeta({ ...meta, owner: e.target.value })} /></div>
             <div className="field" style={{ gridColumn: "1 / -1" }}><label>Tags (comma-separated)</label><input value={meta.tags} onChange={(e) => setMeta({ ...meta, tags: e.target.value })} placeholder="research, MVP, governance" /></div>
+            <div className="field" style={{ gridColumn: "1 / -1" }}><label>Google Docs URL <span style={{ color: "var(--text-3)", fontWeight: 400, fontSize: 11 }}>(optional)</span></label><input value={meta.googleDocsUrl || ""} onChange={(e) => setMeta({ ...meta, googleDocsUrl: e.target.value })} placeholder="https://docs.google.com/…" /></div>
           </div>
         </div>
         <div className="modal__footer">
@@ -1251,6 +1356,7 @@ const EditDocModal = ({ doc, onClose, onSave }) => {
             <div className="field"><label>Status</label><select className="filter-select" value={m.status} onChange={(e) => setM({ ...m, status: e.target.value })}><option>In Progress</option><option>For Review</option><option>Approved</option><option>Archived</option></select></div>
             <div className="field"><label>Owner</label><input value={m.owner} onChange={(e) => setM({ ...m, owner: e.target.value })} /></div>
             <div className="field" style={{ gridColumn: "1 / -1" }}><label>Tags (comma-separated)</label><input value={m.tags} onChange={(e) => setM({ ...m, tags: e.target.value })} /></div>
+            <div className="field" style={{ gridColumn: "1 / -1" }}><label>Google Docs URL <span style={{ color: "var(--text-3)", fontWeight: 400, fontSize: 11 }}>(optional)</span></label><input value={m.googleDocsUrl || ""} onChange={(e) => setM({ ...m, googleDocsUrl: e.target.value })} placeholder="https://docs.google.com/…" /></div>
           </div>
         </div>
         <div className="modal__footer">
@@ -1490,4 +1596,93 @@ const NewSignoffFormModal = ({ onClose, onSave, allDocs = [] }) => {
   );
 };
 
-Object.assign(window, { DocumentsPage, StartHerePage, CalendarPage, SignOffPage, BigIdeasPage, AnalyticsPage, AdminPage });
+// ----- Changelog Page -----
+const CHANGELOG_ENTRIES = [
+  {
+    version: "1.0.0", date: "2026-05-07", type: "major", title: "Portal Launch 🦋",
+    items: [
+      "Initial release of the Daily Living Labs Knowledge Portal",
+      "Document library with phase organization: Spring, Summer, Fall, and Future Work",
+      "Start Here guided onboarding path with 5 core document steps",
+      "Sign-off workflow with Approve / Discuss / Defer decision matrix",
+      "Deferred items pipeline automatically flows to Future Work",
+      "Big Ideas sticky note board with drag-and-drop reordering",
+      "Calendar & Timeline with milestone tracker and event creation",
+      "Analytics & activity history with real-time view and download tracking",
+      "Admin panel for document and sign-off form management",
+      "Supabase integration for authentication, storage, and live data",
+      "Dark mode and 🦋 Butterfly Mode cursor",
+      "Onboarding tour for first-time users with 9 coach-mark steps",
+      "Profile nudge after onboarding to encourage profile setup",
+      "Pin any document to each Start Here step",
+      "Live search dropdown with instant document results",
+      "Sign-off PDF export via browser print",
+      "Read tracking — completed Start Here steps marked with ✓",
+      "Google Docs URL field on document upload and edit",
+    ]
+  },
+  {
+    version: "0.9.0", date: "2026-05-07", type: "minor", title: "Beta Testing",
+    items: [
+      "Drag-and-drop sticky notes on Big Ideas board with pointer capture",
+      "Document viewer with PDF preview and image support",
+      "Phase-filtered document views (Spring, Summer, Fall, Future Work)",
+      "Rich sign-off form builder with multi-select document picker",
+      "Deferred items displayed on Future Work page as cards",
+      "Needs Review flag toggle on dashboard and admin panel",
+    ]
+  },
+  {
+    version: "0.8.0", date: "2026-05-07", type: "minor", title: "Core Features",
+    items: [
+      "Authentication with Supabase Auth — sign up, sign in, confirm email",
+      "Document upload with Supabase Storage and metadata editing",
+      "Profile settings with emoji avatars and role labels",
+      "Calendar view with per-day event creation and category color coding",
+      "Activity feed capturing views, uploads, edits, and sign-offs",
+      "Analytics snapshot widget on dashboard",
+    ]
+  },
+  {
+    version: "0.5.0", date: "2026-05-07", type: "minor", title: "Design System",
+    items: [
+      "Brand palette: lavender-forward with dark purple primary",
+      "Fraunces display font + Inter body + JetBrains Mono",
+      "Light and dark theme with CSS custom properties",
+      "Responsive sidebar navigation with badge counts",
+      "Card, badge, chip, and button component library",
+      "Empty and loading states across all pages",
+    ]
+  },
+];
+
+const ChangelogPage = () => (
+  <div>
+    <div className="page-header">
+      <h1>Changelog</h1>
+      <p>A history of portal development — features added, improved, and shipped.</p>
+    </div>
+    <div className="changelog-list">
+      {CHANGELOG_ENTRIES.map(entry => (
+        <div key={entry.version} className="changelog-entry">
+          <div className="changelog-dot-col">
+            <div className={`changelog-dot${entry.type === "major" ? " changelog-dot--major" : ""}`} />
+            <div className="changelog-version">{entry.version}</div>
+            <div className="changelog-date">{new Date(entry.date + "T00:00").toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" })}</div>
+          </div>
+          <div className="changelog-body">
+            <div className="changelog-title">
+              {entry.title}
+              <span className={`changelog-badge changelog-badge--${entry.type}`}>{entry.type}</span>
+            </div>
+            <ul className="changelog-items">
+              {entry.items.map((item, i) => <li key={i}>{item}</li>)}
+            </ul>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+Object.assign(window, { DocumentsPage, StartHerePage, CalendarPage, SignOffPage, BigIdeasPage, AnalyticsPage, AdminPage, ChangelogPage });
