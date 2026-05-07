@@ -1060,12 +1060,9 @@ const App = () => {
     setDocs(prev => prev.map(d => d.id === doc.id ? updated : d));
     window.DLL_DB.upsertOne("documents", updated);
     logActivity("view", doc.title);
-    setReadDocs(prev => {
-      const next = new Set(prev);
-      next.add(doc.id);
-      if (currentUser) localStorage.setItem(`dll_read_docs_${currentUser.id}`, JSON.stringify([...next]));
-      return next;
-    });
+    const next = new Set([...readDocs, doc.id]);
+    setReadDocs(next);
+    if (currentUser) localStorage.setItem(`dll_read_docs_${currentUser.id}`, JSON.stringify([...next]));
   };
 
   const onDownload = (doc) => {
