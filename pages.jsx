@@ -692,6 +692,14 @@ const SignOffPage = ({ forms, allDocs, onSubmit, onView }) => {
     return <SignOffForm form={active} allDocs={allDocs} onSubmit={onSubmit} onView={onView} onBack={() => setActive(null)} />;
   }
 
+  const phaseChipClass = (phase) => {
+    if (phase === "Spring 2026") return "chip--green";
+    if (phase === "Summer 2026") return "chip--yellow";
+    if (phase === "Fall 2026")   return "chip--peach";
+    if (phase === "Future Work") return "chip--lavender";
+    return "";
+  };
+
   return (
     <div>
       <div className="page-header">
@@ -706,7 +714,7 @@ const SignOffPage = ({ forms, allDocs, onSubmit, onView }) => {
             <p className="signoff-card__sub">{f.subtitle}</p>
             <div className="signoff-card__meta">
               <span className="signoff-card__owner"><Icon name="user" size={11} /> {f.owner}</span>
-              <span className="chip">{f.phase}</span>
+              <span className={`chip ${phaseChipClass(f.phase)}`}>{f.phase}</span>
             </div>
           </button>
         ))}

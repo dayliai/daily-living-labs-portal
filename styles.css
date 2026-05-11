@@ -912,12 +912,14 @@ button.card__link {
   border: 1px solid var(--border);
 }
 .chip--green { background: #E3F8E8; color: #1F6B33; border-color: #C8ECCF; }
+.chip--yellow { background: #FFFBE0; color: #7A5F08; border-color: #F0D44A; }
 .chip--lavender { background: var(--primary-light); color: var(--primary); border-color: transparent; }
 .chip--peach { background: #FFE4D0; color: #9A4F1A; border-color: #FFD0B0; }
 .chip--blue { background: #DDE9FF; color: #1F4288; border-color: #C5D6F8; }
 
 [data-theme="dark"] .chip { background: var(--surface-2); color: var(--text-2); }
 [data-theme="dark"] .chip--green { background: #1F4028; color: #8FE0A2; }
+[data-theme="dark"] .chip--yellow { background: #3A3200; color: #FFE566; border-color: #7A6A00; }
 [data-theme="dark"] .chip--lavender { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
 [data-theme="dark"] .chip--peach { background: #4A2A15; color: #FFC299; }
 [data-theme="dark"] .chip--blue { background: #1F2D55; color: #A8C2F5; }
@@ -961,7 +963,8 @@ button.card__link {
 [data-theme="dark"] .start-tile__icon,
 [data-theme="dark"] .start-here-step__emoji,
 [data-theme="dark"] .activity-row__icon,
-[data-theme="dark"] .kpi__icon {
+[data-theme="dark"] .kpi__icon,
+[data-theme="dark"] .signoff-card__icon {
   border: 1px solid var(--primary);
 }
 
