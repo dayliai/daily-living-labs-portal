@@ -918,7 +918,7 @@ button.card__link {
 
 [data-theme="dark"] .chip { background: var(--surface-2); color: var(--text-2); }
 [data-theme="dark"] .chip--green { background: #1F4028; color: #8FE0A2; }
-[data-theme="dark"] .chip--lavender { background: var(--primary-light); color: var(--primary); border-color: var(--border-strong); }
+[data-theme="dark"] .chip--lavender { background: var(--primary-light); color: var(--primary); border-color: var(--border); }
 [data-theme="dark"] .chip--peach { background: #4A2A15; color: #FFC299; }
 [data-theme="dark"] .chip--blue { background: #1F2D55; color: #A8C2F5; }
 
@@ -952,7 +952,7 @@ button.card__link {
 [data-theme="dark"] .badge--approved { background: #1F4028; color: #8FE0A2; }
 [data-theme="dark"] .badge--changes { background: #4A1A1A; color: #FF9999; }
 [data-theme="dark"] .badge--draft { background: var(--surface-2); color: var(--text-2); }
-[data-theme="dark"] .badge--upcoming { background: var(--primary-light); color: var(--primary); border: 1px solid var(--border-strong); }
+[data-theme="dark"] .badge--upcoming { background: var(--primary-light); color: var(--primary); border: 1px solid var(--border); }
 [data-theme="dark"] .badge--milestone { background: #1F4028; color: #8FE0A2; }
 
 /* Dark mode — purple-bg emoji/icon containers blend into dark surface; add border */
@@ -962,7 +962,7 @@ button.card__link {
 [data-theme="dark"] .start-here-step__emoji,
 [data-theme="dark"] .activity-row__icon,
 [data-theme="dark"] .kpi__icon {
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
 }
 
 /* ============== Needs review list ============== */
