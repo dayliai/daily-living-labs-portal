@@ -28,7 +28,7 @@ const StartHerePicker = ({ stepId, docs, pins, onPin, onUnpin, onClose }) => {
     <div ref={ref} className="pin-picker">
       <div className="pin-picker__search">
         <Icon name="search" size={12} />
-        <input autoFocus placeholder="Search documents…" value={query} onChange={e => setQuery(e.target.value)} />
+        <input autoFocus placeholder="Search documents…" value={query} onChange={e => setQuery(e.target.value)} aria-label="Search documents to pin" />
       </div>
       <div className="pin-picker__list">
         {filtered.length === 0
@@ -117,9 +117,9 @@ const NeedsReview = ({ docs, onView, onFlag, onViewAll }) => {
     <section className="card" aria-labelledby="needs-review-heading">
       <div className="card__header">
         <h3 className="card__title" id="needs-review-heading">
-          Needs Review <span style={{ background: "var(--status-changes-bg)", color: "var(--status-changes-text)", borderRadius: "999px", padding: "1px 8px", fontSize: "11px", marginLeft: "6px", verticalAlign: "middle" }}>{flagged.length}</span>
+          Needs Review <span style={{ background: "var(--status-changes-bg)", color: "var(--status-changes-text)", borderRadius: "999px", padding: "1px 8px", fontSize: "11px", marginLeft: "6px", verticalAlign: "middle" }} aria-label={`${flagged.length} documents`}>{flagged.length}</span>
         </h3>
-        <a className="card__link" href="#" onClick={(e) => { e.preventDefault(); onViewAll(); }}>View all</a>
+        <button className="card__link" onClick={onViewAll}>View all</button>
       </div>
       {flagged.length === 0 ? (
         <div className="empty"><div className="empty__emoji">✨</div><div className="empty__title">All clear</div><div className="empty__msg">Nothing needs review right now.</div></div>
@@ -167,7 +167,7 @@ const RecentActivity = ({ items, onViewAll }) => (
   <section className="card" aria-labelledby="recent-activity-heading">
     <div className="card__header">
       <h3 className="card__title" id="recent-activity-heading">Recent Activity</h3>
-      <a className="card__link" href="#" onClick={(e) => { e.preventDefault(); onViewAll && onViewAll(); }}>View all</a>
+      <button className="card__link" onClick={() => onViewAll && onViewAll()}>View all</button>
     </div>
     {(!items || items.length === 0) ? (
       <div className="empty">
@@ -205,7 +205,7 @@ const TimelineWidget = ({ items, onViewAll }) => {
     <section className="card" aria-labelledby="timeline-heading">
       <div className="card__header">
         <h3 className="card__title" id="timeline-heading">Calendar & Timeline</h3>
-        <a className="card__link" href="#" onClick={(e) => { e.preventDefault(); onViewAll(); }}>View full calendar</a>
+        <button className="card__link" onClick={onViewAll}>View full calendar</button>
       </div>
       <div className="timeline-list">
         {upcoming.length === 0 ? (
@@ -240,7 +240,7 @@ const AnalyticsSnapshot = ({ docs, onViewAll }) => {
     <section className="card" aria-labelledby="analytics-heading">
       <div className="card__header">
         <h3 className="card__title" id="analytics-heading">Analytics Snapshot</h3>
-        <a className="card__link" href="#" onClick={(e) => { e.preventDefault(); onViewAll(); }}>View full analytics</a>
+        <button className="card__link" onClick={onViewAll}>View full analytics</button>
       </div>
       <div className="kpi-row">
         <div className="kpi">
@@ -702,7 +702,7 @@ const OnboardingTour = ({ onClose }) => {
         fontFamily: "var(--font-body)",
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 4, alignItems: "center" }} aria-hidden="true">
             {TOUR_STEPS.map((_, i) => (
               <div key={i} style={{
                 width: i === step ? 18 : 5, height: 5, borderRadius: 3,
@@ -746,8 +746,8 @@ const OnboardingTour = ({ onClose }) => {
             }}>Skip</button>
           )}
         </div>
-        <div style={{ textAlign: "center", marginTop: 10, fontSize: 11, color: "rgba(255,255,255,0.3)" }}>
-          {step + 1} of {TOUR_STEPS.length}
+        <div style={{ textAlign: "center", marginTop: 10, fontSize: 11, color: "rgba(255,255,255,0.3)" }} aria-live="polite" aria-atomic="true">
+          Step {step + 1} of {TOUR_STEPS.length}
         </div>
       </div>
     </React.Fragment>
@@ -780,8 +780,8 @@ const ProfileNudge = ({ onOpenProfile, onClose }) => {
         height: pingSize,
       }} />
 
-      {/* Bouncing arrow */}
-      <div style={{
+      {/* Bouncing arrow — decorative */}
+      <div aria-hidden="true" style={{
         position: "fixed",
         left: tipLeft - 18,
         top: centerY - 11,

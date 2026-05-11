@@ -1,3 +1,25 @@
+// ============== Focus trap hook (WCAG 2.1.2, 2.4.3) ==============
+const useFocusTrap = (ref) => {
+  React.useEffect(() => {
+    const prev = document.activeElement;
+    const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const el = ref.current;
+    if (!el) return;
+    const first = () => [...el.querySelectorAll(FOCUSABLE)][0];
+    const all = () => [...el.querySelectorAll(FOCUSABLE)];
+    if (first()) first().focus();
+    const trap = (e) => {
+      if (e.key !== 'Tab') return;
+      const nodes = all();
+      if (!nodes.length) return;
+      if (e.shiftKey && document.activeElement === nodes[0]) { e.preventDefault(); nodes[nodes.length - 1].focus(); }
+      else if (!e.shiftKey && document.activeElement === nodes[nodes.length - 1]) { e.preventDefault(); nodes[0].focus(); }
+    };
+    document.addEventListener('keydown', trap);
+    return () => { document.removeEventListener('keydown', trap); if (prev && prev.focus) try { prev.focus(); } catch {} };
+  }, []);
+};
+
 // ============== Main App ==============
 
 const AuthScreen = () => {
@@ -58,11 +80,11 @@ const AuthScreen = () => {
           </div>
         ) : tab === "signin" ? (
           <form onSubmit={signIn}>
-            <div className="field"><label>Email</label>
-              <input type="email" value={form.email} onChange={e => up({ email: e.target.value })} placeholder="you@example.com" required autoFocus />
+            <div className="field"><label htmlFor="signin-email">Email</label>
+              <input id="signin-email" type="email" autoComplete="email" value={form.email} onChange={e => up({ email: e.target.value })} placeholder="you@example.com" required autoFocus />
             </div>
-            <div className="field"><label>Password</label>
-              <input type="password" value={form.password} onChange={e => up({ password: e.target.value })} placeholder="Your password" required />
+            <div className="field"><label htmlFor="signin-password">Password</label>
+              <input id="signin-password" type="password" autoComplete="current-password" value={form.password} onChange={e => up({ password: e.target.value })} placeholder="Your password" required />
             </div>
             <div className="lock__error" role="alert">{err}</div>
             <button type="submit" className="btn btn--primary lock__btn" disabled={loading}>
@@ -75,11 +97,11 @@ const AuthScreen = () => {
           </form>
         ) : tab === "signup" ? (
           <form onSubmit={signUp}>
-            <div className="field"><label>Email</label>
-              <input type="email" value={form.email} onChange={e => up({ email: e.target.value })} placeholder="you@example.com" required autoFocus />
+            <div className="field"><label htmlFor="signup-email">Email</label>
+              <input id="signup-email" type="email" autoComplete="email" value={form.email} onChange={e => up({ email: e.target.value })} placeholder="you@example.com" required autoFocus />
             </div>
-            <div className="field"><label>Password <span style={{ color: "var(--text-3)", fontSize: 11 }}>(min 6 chars)</span></label>
-              <input type="password" value={form.password} onChange={e => up({ password: e.target.value })} placeholder="Create a password" required />
+            <div className="field"><label htmlFor="signup-password">Password <span style={{ color: "var(--text-3)", fontSize: 11 }}>(min 6 chars)</span></label>
+              <input id="signup-password" type="password" autoComplete="new-password" value={form.password} onChange={e => up({ password: e.target.value })} placeholder="Create a password" required />
             </div>
             <div className="lock__error" role="alert">{err}</div>
             <button type="submit" className="btn btn--primary lock__btn" disabled={loading}>
@@ -91,8 +113,8 @@ const AuthScreen = () => {
             <button type="button" className="lock__text-btn lock__back-btn" onClick={() => goTab("signin")}>← Back to Sign In</button>
             <h3 className="lock__sub-heading">Reset Password</h3>
             <p className="lock__sub-desc">Enter your email and we'll send you a link to set a new password.</p>
-            <div className="field"><label>Email</label>
-              <input type="email" value={form.email} onChange={e => up({ email: e.target.value })} placeholder="you@example.com" required autoFocus />
+            <div className="field"><label htmlFor="reset-email">Email</label>
+              <input id="reset-email" type="email" autoComplete="email" value={form.email} onChange={e => up({ email: e.target.value })} placeholder="you@example.com" required autoFocus />
             </div>
             <div className="lock__error" role="alert">{err}</div>
             <button type="submit" className="btn btn--primary lock__btn" disabled={loading || !form.email.trim()}>
@@ -117,6 +139,8 @@ const AuthScreen = () => {
 };
 
 const ProfileModal = ({ profile, email, onSave, onClose }) => {
+  const modalRef = React.useRef(null);
+  useFocusTrap(modalRef);
   const [section, setSection] = React.useState("profile");
   const [form, setForm] = React.useState({
     username: profile?.username || "",
@@ -153,10 +177,10 @@ const ProfileModal = ({ profile, email, onSave, onClose }) => {
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal modal--narrow" onClick={e => e.stopPropagation()}>
+      <div ref={modalRef} className="modal modal--narrow" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
         <div className="modal__header">
-          <h2>Profile settings</h2>
-          <button className="modal__close" onClick={onClose} title="Close"><Icon name="x" size={16} /></button>
+          <h2 id="profile-modal-title">Profile settings</h2>
+          <button className="modal__close" onClick={onClose} aria-label="Close profile settings"><Icon name="x" size={16} /></button>
         </div>
         <div className="modal__body">
           <div className="range-toggle" style={{ marginBottom: 20 }}>
@@ -172,7 +196,7 @@ const ProfileModal = ({ profile, email, onSave, onClose }) => {
                 <label>Avatar</label>
                 <div className="emoji-grid emoji-grid--avatar">
                   {AVATAR_EMOJIS.map((em, idx) => (
-                    <button key={idx} type="button" className={`emoji-grid__item ${form.avatar_emoji === em ? "is-selected" : ""}`} onClick={() => up({ avatar_emoji: em })}>{em}</button>
+                    <button key={idx} type="button" className={`emoji-grid__item ${form.avatar_emoji === em ? "is-selected" : ""}`} onClick={() => up({ avatar_emoji: em })} aria-label={`Select ${em} as avatar`} aria-pressed={form.avatar_emoji === em}>{em}</button>
                   ))}
                 </div>
               </div>
@@ -191,9 +215,9 @@ const ProfileModal = ({ profile, email, onSave, onClose }) => {
               {acctErr && <div className="acct-banner acct-banner--err">{acctErr}</div>}
 
               <div className="field">
-                <label>Update Email</label>
+                <label htmlFor="acct-new-email">Update Email</label>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <input type="email" value={newEmail} onChange={e => { setNewEmail(e.target.value); setAcctErr(""); }} placeholder="New email address" style={{ flex: 1 }} />
+                  <input id="acct-new-email" type="email" autoComplete="email" value={newEmail} onChange={e => { setNewEmail(e.target.value); setAcctErr(""); }} placeholder="New email address" style={{ flex: 1 }} />
                   <button className="btn btn--primary btn--small" onClick={handleUpdateEmail} disabled={!newEmail.trim() || acctLoading === "email"}>
                     {acctLoading === "email" ? "Sending…" : "Update"}
                   </button>
@@ -201,9 +225,9 @@ const ProfileModal = ({ profile, email, onSave, onClose }) => {
               </div>
 
               <div className="field" style={{ marginTop: 20 }}>
-                <label>Change Password</label>
+                <label htmlFor="acct-new-password">Change Password</label>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <input type="password" value={newPassword} onChange={e => { setNewPassword(e.target.value); setAcctErr(""); }} placeholder="New password (min 6 chars)" style={{ flex: 1 }} />
+                  <input id="acct-new-password" type="password" autoComplete="new-password" value={newPassword} onChange={e => { setNewPassword(e.target.value); setAcctErr(""); }} placeholder="New password (min 6 chars)" style={{ flex: 1 }} />
                   <button className="btn btn--primary btn--small" onClick={handleUpdatePassword} disabled={!newPassword || acctLoading === "password"}>
                     {acctLoading === "password" ? "Saving…" : "Update"}
                   </button>
@@ -379,15 +403,15 @@ const Topbar = ({ docs = [], onViewDoc, title, subtitle, search, setSearch, them
                  value={search} onChange={handleChange}
                  onFocus={() => { if (search.trim()) setShowDrop(true); }}
                  onKeyDown={(e) => { if (e.key === "Enter") { setShowDrop(false); onSearchSubmit(); } }}
-                 aria-label="Search portal" aria-autocomplete="list" />
+                 aria-label="Search portal" aria-expanded={showDrop} aria-haspopup="menu" />
           <span className="search__kbd" aria-hidden="true">⌘K</span>
         </div>
         {showDrop && (
-          <div className="search-dropdown" role="listbox" aria-label="Search results">
+          <div className="search-dropdown" role="menu" aria-label="Search results">
             {results.length === 0 ? (
-              <div className="search-dropdown__empty">No documents match "{search}"</div>
+              <div className="search-dropdown__empty" role="status">No documents match "{search}"</div>
             ) : results.map(doc => (
-              <button key={doc.id} className="search-dropdown__item" role="option" onClick={() => handleSelect(doc)}>
+              <button key={doc.id} className="search-dropdown__item" role="menuitem" onClick={() => handleSelect(doc)}>
                 <div className="search-dropdown__item-thumb"><DocThumb kind={doc.thumb} /></div>
                 <div className="search-dropdown__item-body">
                   <div className="search-dropdown__item-title">{doc.title}</div>
@@ -396,7 +420,7 @@ const Topbar = ({ docs = [], onViewDoc, title, subtitle, search, setSearch, them
               </button>
             ))}
             <div className="search-dropdown__footer">
-              <button className="search-dropdown__all" onClick={handleViewAll}>
+              <button className="search-dropdown__all" role="menuitem" onClick={handleViewAll}>
                 View all results <Icon name="chevron-right" size={12} />
               </button>
             </div>
@@ -408,11 +432,10 @@ const Topbar = ({ docs = [], onViewDoc, title, subtitle, search, setSearch, them
           <button aria-pressed={theme === "light"} aria-label="Light theme" title="Light theme" onClick={() => setTheme("light")}><Icon name="sun" size={14} /></button>
           <button aria-pressed={theme === "dark"} aria-label="Dark theme" title="Dark theme" onClick={() => setTheme("dark")}><Icon name="moon" size={14} /></button>
         </div>
-        <label className="switch" data-on={butterfly} onClick={() => setButterfly(!butterfly)} role="switch" aria-checked={butterfly} tabIndex={0}
-               onKeyDown={(e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); setButterfly(!butterfly); } }}>
+        <button type="button" className="switch" data-on={butterfly} onClick={() => setButterfly(!butterfly)} role="switch" aria-checked={butterfly}>
           <span className="switch__label"><span aria-hidden="true">🦋</span> Butterfly Mode</span>
-          <span className="switch__track"><span className="switch__thumb"></span></span>
-        </label>
+          <span className="switch__track" aria-hidden="true"><span className="switch__thumb"></span></span>
+        </button>
         <div className="user-pill-wrap">
           <button className="user-pill" onClick={() => setUserMenuOpen(o => !o)} aria-haspopup="menu" aria-expanded={userMenuOpen} aria-label="Account menu">
             <UserAvatar profile={profile} size={18} />
@@ -427,6 +450,8 @@ const Topbar = ({ docs = [], onViewDoc, title, subtitle, search, setSearch, them
 
 // ============== Document Viewer Modal ==============
 const DocViewer = ({ doc, onClose, onDownload, profile, currentUser }) => {
+  const modalRef = React.useRef(null);
+  useFocusTrap(modalRef);
   const [comments, setComments] = React.useState([]);
   const [commentText, setCommentText] = React.useState("");
   const [posting, setPosting] = React.useState(false);
@@ -517,7 +542,7 @@ const DocViewer = ({ doc, onClose, onDownload, profile, currentUser }) => {
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-labelledby="doc-modal-title" aria-modal="true">
+      <div ref={modalRef} className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-labelledby="doc-modal-title" aria-modal="true">
         <div className="modal__header">
           <h2 className="modal__title" id="doc-modal-title">{doc.title}</h2>
           <span className={`badge badge--${doc.status === "Approved" ? "approved" : doc.status === "For Review" ? "review" : doc.status === "Archived" ? "archived" : "draft"}`}>{doc.status}</span>
@@ -581,8 +606,9 @@ const DocViewer = ({ doc, onClose, onDownload, profile, currentUser }) => {
               <div className="comment-form">
                 <div className="comment__avatar">{profile?.avatar_emoji || "🦋"}</div>
                 <div style={{ flex: 1 }}>
-                  <textarea className="comment-form__input" rows={2}
-                    placeholder="Add a comment… (Cmd+Enter to post)"
+                  <label htmlFor="comment-input" className="sr-only">Add a comment</label>
+                  <textarea id="comment-input" className="comment-form__input" rows={2}
+                    placeholder="Add a comment… (Cmd+Enter or Ctrl+Enter to post)"
                     value={commentText}
                     onChange={e => setCommentText(e.target.value)}
                     onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) postComment(); }} />
@@ -707,7 +733,7 @@ const Dashboard = ({ docs, ideas, activity, timeline, events, signoffForms, subm
         <section className="card">
           <div className="card__header">
             <h3 className="card__title">Big Ideas</h3>
-            <a className="card__link" href="#" onClick={(e) => { e.preventDefault(); onNav("ideas"); }}>View all ideas</a>
+            <button className="card__link" onClick={() => onNav("ideas")}>View all ideas</button>
           </div>
           <BigIdeasBoard ideas={ideas} draggable={false} compact={true} />
         </section>
@@ -755,6 +781,8 @@ const PAGE_LABELS = {
 };
 
 const FeedbackModal = ({ view, profile, onClose }) => {
+  const modalRef = React.useRef(null);
+  useFocusTrap(modalRef);
   const [type, setType] = React.useState("bug");
   const [message, setMessage] = React.useState("");
   const [submitted, setSubmitted] = React.useState(false);
@@ -782,10 +810,10 @@ const FeedbackModal = ({ view, profile, onClose }) => {
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal modal--narrow" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Send feedback">
+      <div ref={modalRef} className="modal modal--narrow" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="feedback-modal-title">
         <div className="modal__header">
-          <h2>🐛 Send Feedback</h2>
-          <button className="modal__close" onClick={onClose} aria-label="Close"><Icon name="x" size={16} /></button>
+          <h2 id="feedback-modal-title"><span aria-hidden="true">🐛</span> Send Feedback</h2>
+          <button className="modal__close" onClick={onClose} aria-label="Close feedback form"><Icon name="x" size={16} /></button>
         </div>
         {submitted ? (
           <div className="modal__body" style={{ textAlign: "center", padding: "32px 24px" }}>
@@ -809,13 +837,13 @@ const FeedbackModal = ({ view, profile, onClose }) => {
                 </div>
               </div>
               <div className="field">
-                <label>Page</label>
-                <input value={PAGE_LABELS[view] || view} disabled style={{ opacity: 0.6 }} />
+                <label htmlFor="feedback-page">Page</label>
+                <input id="feedback-page" value={PAGE_LABELS[view] || view} disabled style={{ opacity: 0.6 }} />
               </div>
               <div className="field">
-                <label>Message *</label>
-                <textarea rows={4} placeholder="Describe the issue or share your thought…"
-                  value={message} onChange={e => setMessage(e.target.value)} />
+                <label htmlFor="feedback-message">Message <span aria-hidden="true">*</span><span className="sr-only">(required)</span></label>
+                <textarea id="feedback-message" rows={4} placeholder="Describe the issue or share your thought…"
+                  value={message} onChange={e => setMessage(e.target.value)} required />
               </div>
             </div>
             <div className="modal__footer">
@@ -1223,7 +1251,7 @@ const App = () => {
                onSignOut={onSignOut} onProfileOpen={() => setProfileOpen(true)}
                profile={profile} email={currentUser?.email}
                open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <main className="main">
+      <main id="main-content" className="main">
         <Topbar docs={docs} onViewDoc={onView}
                 title={(headers[view] || headers.dashboard).title}
                 subtitle={(headers[view] || headers.dashboard).subtitle}

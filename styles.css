@@ -1,3 +1,19 @@
+/* ============== Skip navigation link (WCAG 2.4.1) ============== */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  padding: 12px 20px;
+  background: var(--primary, #6B21D9);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 10000;
+  text-decoration: none;
+  border-radius: 0 0 8px 0;
+}
+.skip-link:focus { top: 0; }
+
 /* ============== Daily Living Labs Knowledge Portal ============== */
 :root {
   /* Brand palette — lavender-forward */
@@ -18,7 +34,7 @@
   --border-strong: #D6CCE8;
   --text: #1B1230;
   --text-2: #56476E;
-  --text-3: #8A7DA1;
+  --text-3: #6B5F85;
   --muted: #B5ADC4;
 
   /* Status */
@@ -101,8 +117,29 @@ body.butterfly-cursor * {
   cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 32 32'><text y='24' font-size='22'>🦋</text></svg>") 4 4, auto !important;
 }
 
-button { font-family: inherit; cursor: pointer; }
+button { font-family: inherit; cursor: pointer; min-height: 24px; min-width: 24px; }
 input, textarea, select { font-family: inherit; }
+
+/* Forced colors (Windows High Contrast) */
+@media (forced-colors: active) {
+  .search input:focus,
+  input:focus, textarea:focus, select:focus {
+    outline: 2px solid ButtonText;
+    outline-offset: 2px;
+  }
+  .skip-link:focus { outline: 2px solid ButtonText; }
+}
+
+/* Screen-reader only utility */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
 
 /* Focus ring — global, accessible */
 :focus-visible {
@@ -336,7 +373,8 @@ select:focus-visible,
 .search input:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px var(--primary-light);
-  outline: none;
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
 }
 .search__icon {
   position: absolute;
@@ -386,6 +424,10 @@ select:focus-visible,
   display: inline-flex; align-items: center; gap: 8px;
   cursor: pointer;
   user-select: none;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
 }
 .switch__track {
   width: 36px; height: 20px;
@@ -485,6 +527,13 @@ select:focus-visible,
   transition: opacity var(--transition);
 }
 .card__link:hover { opacity: 0.7; text-decoration: underline; }
+button.card__link {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
 
 /* ============== Dashboard grid ============== */
 .dashboard {
@@ -640,9 +689,12 @@ select:focus-visible,
   background: transparent;
   width: 100%;
   font-size: 12px;
-  outline: none;
   color: var(--text);
   font-family: var(--font-body);
+}
+.pin-picker__search input:focus-visible {
+  outline: 2px solid var(--primary);
+  border-radius: 4px;
 }
 .pin-picker__list {
   max-height: 180px;
