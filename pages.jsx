@@ -1732,6 +1732,26 @@ const NewSignoffFormModal = ({ onClose, onSave, allDocs = [] }) => {
 // ----- Changelog Page -----
 const CHANGELOG_ENTRIES = [
   {
+    version: "1.4.0", date: "2026-05-10", type: "major", title: "Accessibility, Dark Mode & Visual Polish",
+    items: [
+      "WCAG 2.2 AA compliance — portal now meets the international standard for web accessibility",
+      "Skip navigation link added for keyboard users",
+      "Color contrast improved throughout: secondary text darkened to meet 4.5:1 minimum ratio in both light and dark mode",
+      "All form labels now properly linked to their inputs; auth and account forms include autocomplete attributes",
+      "Butterfly mode toggle corrected from a label element to a proper accessible switch button",
+      "Search dropdown ARIA roles corrected — results are now announced correctly to screen readers",
+      "All fake link buttons replaced with real button elements throughout the portal",
+      "Modal dialogs (Document Viewer, Profile, Feedback) now trap focus and return focus on close",
+      "Avatar emoji picker buttons labeled for screen readers",
+      "Minimum touch target size enforced on all buttons (24×24px per WCAG 2.5.8)",
+      "Windows High Contrast Mode supported via forced-colors media query",
+      "Focus rings restored on search bar and pin picker inputs",
+      "Dark mode: emoji containers, icon containers, and lavender pills now show a visible border so they stand out against the dark background",
+      "Dark mode: calendar event category tags (Event, Other, Milestone, etc.) now render as light pastels instead of nearly invisible dark tints",
+      "Sign-off page: phase chips now use color-coded pastels matching each dashboard phase card — green for Spring, yellow for Summer, peach for Fall, lavender for Future Work",
+    ]
+  },
+  {
     version: "1.3.0", date: "2026-05-07", type: "major", title: "Auth Flows, Alerts & Cross-User Sharing",
     items: [
       "Forgot Password: Supabase reset-link email sent directly from sign-in modal",
