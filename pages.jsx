@@ -377,9 +377,9 @@ const CalendarPage = ({ events, setEvents, onActivity }) => {
               const color = item.ev.color || meta.color;
               // Option C: soft tinted bg + dark-saturated text derived from the category color
               const badgeStyle = {
-                background: `color-mix(in oklch, ${color} 18%, transparent)`,
+                background: `color-mix(in oklch, ${color} 18%, #fff)`,
                 color: `color-mix(in oklch, ${color} 80%, #000 20%)`,
-                border: `1px solid color-mix(in oklch, ${color} 35%, transparent)`,
+                border: `1px solid color-mix(in oklch, ${color} 35%, #fff)`,
               };
               return (
                 <button
